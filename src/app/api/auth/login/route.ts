@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 
 export async function POST(req: Request) {
   try {
-    const body = await req.text(); // Use text() so you can forward raw body
+    const body = await req.text();
 
     const authRes = await fetch(`${process.env.API_SERVER_URL}/auth/login`, {
       method: 'POST',
@@ -15,7 +15,10 @@ export async function POST(req: Request) {
 
     if (!authRes.ok) {
       const errData = await authRes.json();
-      return NextResponse.json({ error: errData.error || 'Auth failed' }, { status: authRes.status });
+      return NextResponse.json(
+        { error: errData.error || 'Auth failed' },
+        { status: authRes.status },
+      );
     }
 
     const data = await authRes.json();

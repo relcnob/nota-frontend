@@ -15,11 +15,17 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-
+import { useAuth } from '@/context/auth-context';
 const formSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
 });
+
+const errorMap = {
+  Unauthorized: 'Invalid email or password',
+  InternalServerError: 'An unexpected error occurred. Please try again later.',
+  'Not Found': 'Account does not exist.',
+};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,6 +36,7 @@ export default function LoginPage() {
       password: '',
     },
   });
+  const { setUser } = useAuth();
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const res = await fetch('/api/auth/login', {
@@ -38,16 +45,22 @@ export default function LoginPage() {
     });
 
     if (res.ok) {
+      const data = await res.json();
+      if (data.user) {
+        setUser(data.user);
+      }
       router.push('/dashboard');
     } else {
-      const data = await res.json();
-      form.setError('email', { message: data.error || 'Invalid credentials' });
+      const data: { error?: string } = await res.json();
+      const errorMsg =
+        (data.error && errorMap[data.error as keyof typeof errorMap]) || 'Invalid credentials';
+      form.setError('email', { message: errorMsg });
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-20">
-      <h2 className="text-2xl font-bold mb-6">Login</h2>
+    <div className="mx-auto mt-20 max-w-md">
+      <h2 className="mb-6 text-2xl font-bold">Login</h2>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
@@ -76,7 +89,7 @@ export default function LoginPage() {
               </FormItem>
             )}
           />
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full cursor-pointer">
             Login
           </Button>
         </form>
