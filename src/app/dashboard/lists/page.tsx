@@ -14,9 +14,10 @@ export default function DashboardPage() {
     limit: number;
     totalPages: number;
   };
-  //TODO: Fetch lists
+
   const [userLists, setUserLists] = useState<List[]>([]);
   const [collaboratorLists, setCollaboratorLists] = useState<List[]>([]);
+  const [lists, setLists] = useState<List[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,6 +39,7 @@ export default function DashboardPage() {
         const collaboratedWithUser = lists.filter((list: List) =>
           list.collaborators?.some((collab) => collab.userId === user?.id),
         );
+        setLists(lists);
         setUserLists(ownedByUser);
         setCollaboratorLists(collaboratedWithUser);
         setMeta(response.data.meta);
@@ -51,27 +53,36 @@ export default function DashboardPage() {
     fetchLists();
   }, [user]);
 
+  const handleDelete = async (listId: string) => {
+    if (!user) return;
+    console.log('Deleting list with ID:', listId);
+    /*  const res = await fetch(`/api/lists/${listId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (res.ok) {
+      setUserLists((prev) => prev.filter((list) => list.id !== listId));
+      setCollaboratorLists((prev) => prev.filter((list) => list.id !== listId));
+    } else {
+      console.error('Failed to delete list');
+    } */
+  };
+
   return (
-    <div className="gb-background mx-auto w-full px-4 py-6 sm:px-6 lg:px-8">
-      <h1 className="mb-6 text-3xl font-semibold">Lists</h1>
+    <div className="gb-background mx-auto w-full max-w-screen-xl px-4 py-6 sm:px-8 lg:px-4">
+      <h1 className="mb-12 text-3xl font-semibold">{`Your Lists (${lists.length})`}</h1>
       <div className="grid grid-cols-1 gap-6">
         {loading || !user ? (
           <p>Loading...</p>
-        ) : collaboratorLists.length > 0 || userLists.length > 0 ? (
+        ) : lists.length > 0 ? (
           <>
-            {userLists.length > 0 && (
-              <div>
-                <h2>{`Your Lists (${userLists.length})`}</h2>
-                {userLists.map((list) => (
-                  <ListItem list={list} key={list.id} />
-                ))}
-              </div>
-            )}
-            {collaboratorLists.length > 0 && (
-              <div>
-                <h2>{`Shared Lists (${collaboratorLists.length})`}</h2>
-                {collaboratorLists.map((list) => (
-                  <ListItem list={list} key={list.id} />
+            {lists.length > 0 && (
+              <div className="mb-6 grid grid-cols-1 gap-4">
+                {lists.map((list) => (
+                  <ListItem list={list} key={list.id} onDelete={() => handleDelete(list.id)} />
                 ))}
               </div>
             )}

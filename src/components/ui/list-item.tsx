@@ -1,7 +1,11 @@
 import { List } from '@/util/types/list';
 import React from 'react';
 import { formatRelativeDate } from '@/util/helpers/formatRelativeDate';
-function ListItem({ list }: { list: List }) {
+import { Popover, PopoverContent, PopoverTrigger } from './popover';
+import { Calendar, Pencil, Trash } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from './button';
+function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => void }) {
   return (
     <div className={`bg-background flex flex-row rounded-lg border px-4 py-2`}>
       <div className="ml-4 flex w-full flex-row items-center justify-between">
@@ -9,11 +13,54 @@ function ListItem({ list }: { list: List }) {
           <h2 className="w-48 text-xl font-bold">{list.title}</h2>
           {list.description && <p className="w-36 text-sm text-gray-600">{list.description}</p>}
         </div>
-        <div className="flex flex-col items-end">
-          <p className="text-sm text-gray-500">Created: {formatRelativeDate(list.createdAt)}</p>
-          {list.updatedAt && list.createdAt !== list.updatedAt && (
-            <p className="text-sm text-gray-500">Updated: {formatRelativeDate(list.updatedAt)}</p>
-          )}
+        <div className="flex flex-row items-center gap-4">
+          <Popover>
+            <PopoverTrigger>
+              <div className="bg-sidebar group border-sidebar hover:border-border flex cursor-pointer items-center justify-center rounded-md border p-2 transition-colors">
+                <Calendar className="group-hover:stroke-primary stroke-gray-500 transition" />
+              </div>
+            </PopoverTrigger>
+            <PopoverContent>
+              <div className="flex flex-col">
+                <p className="text-sm text-gray-500">
+                  Created: {formatRelativeDate(list.createdAt)}
+                </p>
+                {list.updatedAt && list.createdAt !== list.updatedAt && (
+                  <p className="text-sm text-gray-500">
+                    Updated: {formatRelativeDate(list.updatedAt)}
+                  </p>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Link href={`/dashboard/list/${list.id}`} className="group">
+            <div className="bg-sidebar group border-sidebar hover:border-border flex cursor-pointer items-center justify-center rounded-md border p-2 transition-colors">
+              <Pencil className="group-hover:stroke-primary stroke-gray-500 transition" />
+            </div>
+          </Link>
+          <Popover>
+            <PopoverTrigger>
+              <div className="bg-sidebar group border-sidebar hover:border-border flex cursor-pointer items-center justify-center rounded-md border p-2 transition-colors">
+                <Trash className="group-hover:stroke-destructive stroke-gray-500 transition" />
+              </div>
+            </PopoverTrigger>
+            <PopoverContent>
+              <div>
+                <p className="mb-4 justify-center text-center text-sm text-gray-500">
+                  Are you sure you want to delete list{' '}
+                  <span className="font-semibold">{list.title}</span>?
+                </p>
+                <Button
+                  className="w-full cursor-pointer"
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => onDelete(list.id)}
+                >
+                  Delete
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
     </div>
