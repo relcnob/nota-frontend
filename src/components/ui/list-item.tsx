@@ -1,3 +1,5 @@
+'use client';
+
 import { List } from '@/util/types/list';
 import React from 'react';
 import { formatRelativeDate } from '@/util/helpers/formatRelativeDate';
@@ -5,13 +7,37 @@ import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { Calendar, Pencil, Trash } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from './button';
+import { Avatar, AvatarFallback } from './avatar';
+
+import { HoverCardTrigger, HoverCard, HoverCardContent } from './hover-card';
 function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => void }) {
+  console.log(list);
+
   return (
     <div className={`bg-background flex flex-row rounded-lg border px-4 py-2`}>
       <div className="ml-4 flex w-full flex-row items-center justify-between">
         <div className="flex flex-row items-center gap-4">
           <h2 className="w-48 text-xl font-bold">{list.title}</h2>
           {list.description && <p className="w-36 text-sm text-gray-600">{list.description}</p>}
+        </div>
+        <div className="flex -space-x-2">
+          {list.collaborators?.map((collab) => (
+            <HoverCard key={collab.id}>
+              <HoverCardTrigger asChild>
+                <Avatar className="ring-background h-8 w-8 ring-2 grayscale hover:grayscale-0">
+                  <AvatarFallback className="cursor-default font-semibold">
+                    {collab.user.username.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+              </HoverCardTrigger>
+              <HoverCardContent>
+                <div className="flex flex-col">
+                  <p className="text-sm font-semibold">{collab.user.username}</p>
+                  <p className="text-xs text-gray-500">{collab.role}</p>
+                </div>
+              </HoverCardContent>
+            </HoverCard>
+          ))}
         </div>
         <div className="flex flex-row items-center gap-4">
           <Popover>
