@@ -3,12 +3,16 @@
 import { useParams } from 'next/navigation';
 import { useList } from '@/hooks/useList';
 import {
+  ArrowUpDown,
   Calendar,
   CircleCheck,
   CircleUserRound,
   Crown,
+  Funnel,
   LucideCalendarSync,
   Pen,
+  Plus,
+  TriangleAlert,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { formatRelativeDate } from '@/util/helpers/formatRelativeDate';
@@ -34,7 +38,8 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command';
-
+import { ItemElement } from '@/components/ui/item';
+import { Item } from '@/util/types/item';
 const SortOptions = [
   { label: 'Name (A-Z)', value: 'name_asc' },
   { label: 'Name (Z-A)', value: 'name_desc' },
@@ -54,10 +59,18 @@ export default function ListDetailPage() {
   const [itemCategories, setItemCategories] = useState<string[]>([]);
   const params = useParams();
   const id = params?.id as string;
-
   const auth = useAuth();
-
   const { data, isLoading, isError } = useList(id);
+
+  const updateItemLocally = async (updatedItem: Partial<Item>) => {
+    if (!listData || !auth.user) return;
+
+    const updatedItems = listData.items.map((item) =>
+      item.id === updatedItem.id ? { ...item, ...updatedItem } : item,
+    );
+
+    setListData({ ...listData, items: updatedItems });
+  };
 
   useEffect(() => {
     if (data) {
@@ -103,15 +116,20 @@ export default function ListDetailPage() {
                   </div>
                 ))}
             </div>
-            <div></div>
+            {data && data.data !== listData && (
+              <div className="flex items-center gap-2 rounded-md bg-yellow-500 px-4 py-2 text-white">
+                <TriangleAlert size={18} />
+                <p className={'text-sm font-semibold'}>Unsaved changes!</p>
+              </div>
+            )}
           </section>
           <section className={'grid grid-cols-3 gap-8'}>
             <div className={'col-span-2'}>
-              <div>
+              <div className="mb-4 flex items-center justify-end gap-4">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm">
-                      Sort
+                      <ArrowUpDown size={24} /> Sort
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
@@ -125,7 +143,7 @@ export default function ListDetailPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm">
-                      Filter
+                      <Funnel size={24} /> Filter
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
@@ -164,17 +182,15 @@ export default function ListDetailPage() {
                     </Command>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                <Button variant="outline" size="sm">
+                  <Plus size={24} /> Add item
+                </Button>
               </div>
               <Separator className="my-4" />
               {listData.items.length > 0 ? (
                 <ul className="space-y-4">
                   {listData.items.map((item) => (
-                    <li key={item.id} className="flex items-center justify-between">
-                      <span>{item.name}</span>
-                      <span className="text-sm text-gray-500">
-                        {formatRelativeDate(item.createdAt)}
-                      </span>
-                    </li>
+                    <ItemElement key={item.id} item={item} onUpdate={updateItemLocally} />
                   ))}
                 </ul>
               ) : (

@@ -4,7 +4,7 @@ export type Item = {
   id: string;
   listId: string;
   name: string;
-  quantity?: number;
+  quantity: number;
   category?: string;
   notes?: string;
   completed?: boolean;
