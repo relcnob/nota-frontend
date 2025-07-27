@@ -11,8 +11,6 @@ import { Avatar, AvatarFallback } from './avatar';
 
 import { HoverCardTrigger, HoverCard, HoverCardContent } from './hover-card';
 function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => void }) {
-  console.log(list);
-
   return (
     <div className={`bg-background flex flex-row rounded-lg border px-4 py-2`}>
       <div className="ml-4 flex w-full flex-row items-center justify-between">
@@ -59,7 +57,7 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
               </div>
             </PopoverContent>
           </Popover>
-          <Link href={`/dashboard/list/${list.id}`} className="group">
+          <Link href={`/dashboard/lists/${list.id}`} className="group">
             <div className="bg-sidebar group border-sidebar hover:border-border flex cursor-pointer items-center justify-center rounded-md border p-2 transition-colors">
               <Pencil className="group-hover:stroke-primary stroke-gray-500 transition" />
             </div>

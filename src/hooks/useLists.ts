@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { List } from '@/util/types/list';
+import api from '@/util/axios';
 
 type ListsResponse = {
   lists: List[];
@@ -17,13 +18,13 @@ export function useLists(page: number, limit: number) {
   return useQuery<ListsResponse>({
     queryKey: ['lists', page, limit],
     queryFn: async () => {
-      const res = await fetch(`/api/lists?page=${page}&limit=${limit}`);
-      if (!res.ok) {
+      const res = await api.get('/lists', { params: { page, limit } });
+      if (res.status !== 200) {
         throw new Error('Failed to fetch lists');
       }
-      const data = await res.json();
-      return data.data;
+      const data = await res;
+      return data.data.data as ListsResponse;
     },
-    staleTime: 1000 * 60 * 5, // cache for 5 minutes
+    staleTime: 1000 * 60 * 5,
   });
 }

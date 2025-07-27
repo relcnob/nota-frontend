@@ -23,7 +23,7 @@ export default function ListsPage() {
   }, [isLoadingLists, listData]);
 
   return (
-    <div className="gb-background mx-auto w-full max-w-screen-xl px-4 py-6 sm:px-8 lg:px-4">
+    <div className="w-full">
       {isLoadingLists && !listData ? (
         <Skeleton className="mb-12 h-[36px] w-[200px] rounded-full" />
       ) : (

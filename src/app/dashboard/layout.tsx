@@ -24,7 +24,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <h2 className="text-lg font-semibold">{`Hi ${user?.username} `}</h2>
             )}
           </section>
-          {children}
+          <section className="bg-background mx-auto w-full max-w-screen-lg px-4">
+            {children}
+          </section>
         </main>
       </SidebarProvider>
     </AuthProvider>

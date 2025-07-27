@@ -12,7 +12,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <html lang="en">
         <head>
-          <title>Nota - Shopping List App</title>
+          <title>Nota - Listing app</title>
           <meta name="viewport" content="width=device-width, initial-scale=1" />
           <link rel="icon" href="/favicon.ico" />
         </head>

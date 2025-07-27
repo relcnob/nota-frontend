@@ -10,7 +10,7 @@ export type List = {
   createdAt: string;
   updatedAt: string;
   owner: User;
-  collaborators?: {
+  collaborators: {
     id: string;
     userId: string;
     listId: string;
@@ -18,5 +18,5 @@ export type List = {
     addedAt: string;
     user: User;
   }[];
-  items?: Item[];
+  items: Item[];
 };
