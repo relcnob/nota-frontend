@@ -2,7 +2,6 @@
 
 import { List } from '@/util/types/list';
 import React from 'react';
-import { formatRelativeDate } from '@/util/helpers/formatRelativeDate';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { Calendar, Pencil, Trash } from 'lucide-react';
 import Link from 'next/link';
@@ -24,7 +23,7 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
               <HoverCardTrigger asChild>
                 <Avatar className="ring-background h-8 w-8 ring-2 grayscale hover:grayscale-0">
                   <AvatarFallback className="cursor-default font-semibold">
-                    {collab.user.username.charAt(0)}
+                    {collab.user.username.charAt(0).toLocaleUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               </HoverCardTrigger>
@@ -47,11 +46,19 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
             <PopoverContent>
               <div className="flex flex-col">
                 <p className="text-sm text-gray-500">
-                  Created: {formatRelativeDate(list.createdAt)}
+                  Created: {new Date(list.createdAt).toLocaleDateString()}{' '}
+                  {new Date(list.createdAt).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
                 </p>
                 {list.updatedAt && list.createdAt !== list.updatedAt && (
-                  <p className="text-sm text-gray-500">
-                    Updated: {formatRelativeDate(list.updatedAt)}
+                  <p className="mt-2 text-sm text-gray-500">
+                    Updated: {new Date(list.updatedAt).toLocaleDateString()}{' '}
+                    {new Date(list.updatedAt).toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </p>
                 )}
               </div>

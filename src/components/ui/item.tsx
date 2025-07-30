@@ -6,7 +6,7 @@ import { Badge } from './badge';
 import { Trash } from 'lucide-react';
 
 type Props = {
-  item: Item;
+  item: Partial<Item> | Item;
   onUpdate: (updatedItem: Partial<Item>) => void;
 };
 
@@ -78,13 +78,15 @@ export function ItemElement({ item, onUpdate }: Props) {
           />
         ) : (
           <div
-            className="max-w-xs cursor-pointer font-medium"
+            className={`max-w-xs cursor-pointer font-medium ${!item.name ? 'text-gray-400' : ''}`}
             onClick={() => setIsEditingName(true)}
           >
-            {item.name}
+            {item.name || 'Untitled'}
           </div>
         )}
-        <div className="text-xs text-gray-500">{formatRelativeDate(item.createdAt)}</div>
+        {item.createdAt && (
+          <div className="text-xs text-gray-500">{formatRelativeDate(item.createdAt)}</div>
+        )}
       </div>
       <div className="ml-4 flex-1">
         {isEditingNotes ? (

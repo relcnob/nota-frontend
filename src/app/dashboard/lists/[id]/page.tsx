@@ -57,6 +57,7 @@ export default function ListDetailPage() {
   const [isEditor, setIsEditor] = useState<boolean | undefined>();
   const [listData, setListData] = useState<List | null>(null);
   const [itemCategories, setItemCategories] = useState<string[]>([]);
+  const [itemsToBeAdded, setItemsToBeAdded] = useState<Partial<Item>[]>([]);
   const params = useParams();
   const id = params?.id as string;
   const auth = useAuth();
@@ -70,6 +71,12 @@ export default function ListDetailPage() {
     );
 
     setListData({ ...listData, items: updatedItems });
+  };
+
+  const updateItemToBeCreatedLocally = (updatedItem: Partial<Item>) => {
+    setItemsToBeAdded((prev) =>
+      prev.map((item) => (item.id === updatedItem.id ? { ...item, ...updatedItem } : item)),
+    );
   };
 
   useEffect(() => {
@@ -97,6 +104,20 @@ export default function ListDetailPage() {
     }
   }, [auth.user, id, listData]);
 
+  const createNewItem = () => {
+    const newItem: Partial<Item> = {
+      id: `new-${Date.now()}`,
+      name: '',
+      quantity: 1,
+      category: '',
+      notes: '',
+      completed: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setItemsToBeAdded((prev) => [...prev, newItem]);
+  };
+
   return (
     <div className={'w-full'}>
       {isLoading && !listData ? (
@@ -106,99 +127,116 @@ export default function ListDetailPage() {
       ) : null}
       {!isLoading && listData && (
         <>
-          <section className="mb-6 flex items-center justify-between">
-            <div className="group flex cursor-pointer items-center gap-2">
-              <h1 className="text-2xl font-semibold">{listData.title}</h1>
-              {isEditor ||
-                (isOwner && (
-                  <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                    <Pen className="cursor-pointer" size={20} />
-                  </div>
-                ))}
-            </div>
-            {data && data.data !== listData && (
-              <div className="flex items-center gap-2 rounded-md bg-yellow-500 px-4 py-2 text-white">
-                <TriangleAlert size={18} />
-                <p className={'text-sm font-semibold'}>Unsaved changes!</p>
-              </div>
-            )}
-          </section>
           <section className={'grid grid-cols-3 gap-8'}>
             <div className={'col-span-2'}>
-              <div className="mb-4 flex items-center justify-end gap-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <ArrowUpDown size={24} /> Sort
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    {SortOptions.map((option) => (
-                      <DropdownMenuItem key={option.value} className="cursor-pointer">
-                        <span>{option.label}</span>
-                      </DropdownMenuItem>
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <div className="group flex cursor-pointer items-center gap-2">
+                  <h1 className="text-2xl font-semibold">{listData.title}</h1>
+                  {isEditor ||
+                    (isOwner && (
+                      <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                        <Pen className="cursor-pointer" size={20} />
+                      </div>
                     ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Funnel size={24} /> Filter
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <Command>
-                      <CommandInput placeholder="Search" />
-                      <CommandList>
-                        <CommandEmpty>No results found.</CommandEmpty>
-                        <CommandGroup heading="Status">
-                          <CommandItem>Completed</CommandItem>
-                          <CommandItem>Incomplete</CommandItem>
-                        </CommandGroup>
+                </div>
+                <div className="flex items-end gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="cursor-pointer">
+                        <ArrowUpDown size={24} /> Sort
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      {SortOptions.map((option) => (
+                        <DropdownMenuItem key={option.value} className="cursor-pointer">
+                          <span>{option.label}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="cursor-pointer">
+                        <Funnel size={24} /> Filter
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <Command>
+                        <CommandInput placeholder="Search" />
+                        <CommandList>
+                          <CommandEmpty>No results found.</CommandEmpty>
+                          <CommandGroup heading="Status">
+                            <CommandItem>Completed</CommandItem>
+                            <CommandItem>Incomplete</CommandItem>
+                          </CommandGroup>
 
-                        {listData?.collaborators.length > 0 && (
-                          <>
-                            <CommandSeparator />
-                            <CommandGroup heading="Collaborators">
-                              {listData.collaborators.map((collaborator) => (
-                                <CommandItem key={collaborator.id}>
-                                  {collaborator.user.username}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </>
-                        )}
-                        {itemCategories.length > 0 && (
-                          <>
-                            <CommandSeparator />
-                            <CommandGroup heading="Categories">
-                              {itemCategories.map((category) => (
-                                <CommandItem key={category}>{category}</CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </>
-                        )}
-                      </CommandList>
-                    </Command>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Button variant="outline" size="sm">
-                  <Plus size={24} /> Add item
-                </Button>
+                          {listData?.collaborators.length > 0 && (
+                            <>
+                              <CommandSeparator />
+                              <CommandGroup heading="Collaborators">
+                                {listData.collaborators.map((collaborator) => (
+                                  <CommandItem key={collaborator.id}>
+                                    {collaborator.user.username}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </>
+                          )}
+                          {itemCategories.length > 0 && (
+                            <>
+                              <CommandSeparator />
+                              <CommandGroup heading="Categories">
+                                {itemCategories.map((category) => (
+                                  <CommandItem key={category}>{category}</CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </>
+                          )}
+                        </CommandList>
+                      </Command>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
               <Separator className="my-4" />
-              {listData.items.length > 0 ? (
-                <ul className="space-y-4">
-                  {listData.items.map((item) => (
+              <div className="space-y-4">
+                {listData.items.length > 0 &&
+                  listData.items.map((item) => (
                     <ItemElement key={item.id} item={item} onUpdate={updateItemLocally} />
                   ))}
-                </ul>
-              ) : (
-                <p className="text-gray-500">No items in this list.</p>
-              )}
+                {itemsToBeAdded.length > 0 &&
+                  itemsToBeAdded.map((item, index) => (
+                    <ItemElement
+                      key={`new-${index}`}
+                      item={item}
+                      onUpdate={updateItemToBeCreatedLocally}
+                    />
+                  ))}
+                {listData.items.length === 0 && itemsToBeAdded.length === 0 && (
+                  <p className="text-gray-500">No items in this list.</p>
+                )}
+                <div className="my-6 flex justify-center">
+                  <Button
+                    variant="outline"
+                    size="default"
+                    className="cursor-pointer"
+                    onClick={createNewItem}
+                  >
+                    <Plus size={24} /> Add item
+                  </Button>
+                </div>
+              </div>
             </div>
-            <div className="col-span-1">
-              <h2 className="mb-2 text-xl font-semibold">About</h2>
+            <div className="sticky top-0 col-span-1 h-screen overflow-y-auto p-4">
+              {data && data.data !== listData ? (
+                <div className="flex w-full items-center gap-2 rounded-md bg-yellow-500 px-4 py-2 text-white">
+                  <TriangleAlert size={18} />
+                  <p className={'text-sm font-semibold'}>Unsaved changes!</p>
+                </div>
+              ) : (
+                <div className="block h-[36px] w-full"></div>
+              )}
+              <h2 className="mt-6 mb-2 text-xl font-semibold">About</h2>
               <p className="text-sm">{listData.description || 'No description provided.'}</p>
               <Separator className="my-2" />
               <div className="my-2 flex flex-col gap-2">
