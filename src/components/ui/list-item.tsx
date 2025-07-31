@@ -1,7 +1,7 @@
 'use client';
 
 import { List } from '@/util/types/list';
-import React from 'react';
+import React, { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { Calendar, Pencil, Trash } from 'lucide-react';
 import Link from 'next/link';
@@ -10,6 +10,8 @@ import { Avatar, AvatarFallback } from './avatar';
 
 import { HoverCardTrigger, HoverCard, HoverCardContent } from './hover-card';
 function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => void }) {
+  const [isDeleteOpen, setDeleteOpen] = useState(false);
+
   return (
     <div className={`bg-background flex flex-row rounded-lg border px-4 py-2`}>
       <div className="ml-4 flex w-full flex-row items-center justify-between">
@@ -18,6 +20,23 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
           {list.description && <p className="w-36 text-sm text-gray-600">{list.description}</p>}
         </div>
         <div className="flex -space-x-2">
+          {list.owner && (
+            <HoverCard>
+              <HoverCardTrigger asChild>
+                <Avatar className="ring-background h-8 w-8 ring-2 grayscale hover:grayscale-0">
+                  <AvatarFallback className="cursor-default font-semibold">
+                    {list.owner.username.charAt(0).toLocaleUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </HoverCardTrigger>
+              <HoverCardContent>
+                <div className="flex flex-col">
+                  <p className="text-sm font-semibold">{list.owner.username}</p>
+                  <p className="text-xs text-gray-500">Owner</p>
+                </div>
+              </HoverCardContent>
+            </HoverCard>
+          )}
           {list.collaborators?.map((collab) => (
             <HoverCard key={collab.id}>
               <HoverCardTrigger asChild>
@@ -36,7 +55,7 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
             </HoverCard>
           ))}
         </div>
-        <div className="flex flex-row items-center gap-4">
+        <div className="flex flex-row items-center gap-6">
           <Popover>
             <PopoverTrigger>
               <div className="bg-sidebar group border-sidebar hover:border-border flex cursor-pointer items-center justify-center rounded-md border p-2 transition-colors">
@@ -69,7 +88,7 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
               <Pencil className="group-hover:stroke-primary stroke-gray-500 transition" />
             </div>
           </Link>
-          <Popover>
+          <Popover open={isDeleteOpen} onOpenChange={setDeleteOpen}>
             <PopoverTrigger>
               <div className="bg-sidebar group border-sidebar hover:border-border flex cursor-pointer items-center justify-center rounded-md border p-2 transition-colors">
                 <Trash className="group-hover:stroke-destructive stroke-gray-500 transition" />
@@ -78,17 +97,30 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
             <PopoverContent>
               <div>
                 <p className="mb-4 justify-center text-center text-sm text-gray-500">
-                  Are you sure you want to delete list{' '}
-                  <span className="font-semibold">{list.title}</span>?
+                  Are you sure you want to delete this list?
                 </p>
-                <Button
-                  className="w-full cursor-pointer"
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => onDelete(list.id)}
-                >
-                  Delete
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    className="cursor-pointer"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDeleteOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="cursor-pointer"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      onDelete(list.id);
+                      setDeleteOpen(false);
+                    }}
+                  >
+                    <Trash className="stroke-white" />
+                    Delete
+                  </Button>
+                </div>
               </div>
             </PopoverContent>
           </Popover>

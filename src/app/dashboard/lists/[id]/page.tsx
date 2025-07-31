@@ -5,6 +5,7 @@ import { useList } from '@/hooks/useList';
 import {
   ArrowUpDown,
   Calendar,
+  ChevronLeft,
   CircleCheck,
   CircleUserRound,
   Crown,
@@ -12,6 +13,7 @@ import {
   LucideCalendarSync,
   Pen,
   Plus,
+  RefreshCcw,
   TriangleAlert,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
@@ -40,6 +42,7 @@ import {
 } from '@/components/ui/command';
 import { ItemElement } from '@/components/ui/item';
 import { Item } from '@/util/types/item';
+import Link from 'next/link';
 const SortOptions = [
   { label: 'Name (A-Z)', value: 'name_asc' },
   { label: 'Name (Z-A)', value: 'name_desc' },
@@ -58,6 +61,7 @@ export default function ListDetailPage() {
   const [listData, setListData] = useState<List | null>(null);
   const [itemCategories, setItemCategories] = useState<string[]>([]);
   const [itemsToBeAdded, setItemsToBeAdded] = useState<Partial<Item>[]>([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const params = useParams();
   const id = params?.id as string;
   const auth = useAuth();
@@ -85,6 +89,14 @@ export default function ListDetailPage() {
       setListData(data.data);
     }
   }, [data]);
+
+  useEffect(() => {
+    if ((data && listData !== data.data) || itemsToBeAdded.length > 0) {
+      setHasUnsavedChanges(true);
+    } else {
+      setHasUnsavedChanges(false);
+    }
+  }, [listData, itemsToBeAdded]);
 
   useEffect(() => {
     if (auth.user && listData) {
@@ -130,16 +142,28 @@ export default function ListDetailPage() {
           <section className={'grid grid-cols-3 gap-8'}>
             <div className={'col-span-2'}>
               <div className="mb-4 flex items-center justify-between gap-4">
-                <div className="group flex cursor-pointer items-center gap-2">
-                  <h1 className="text-2xl font-semibold">{listData.title}</h1>
-                  {isEditor ||
-                    (isOwner && (
-                      <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                        <Pen className="cursor-pointer" size={20} />
-                      </div>
-                    ))}
+                <div className="flex items-center gap-2">
+                  <Link href={`/dashboard/lists/`} className="mx-2 flex items-center">
+                    <ChevronLeft size={24} />
+                  </Link>
+                  <div className="group flex items-center gap-2">
+                    <h1 className="max-w-[10rem] cursor-pointer text-2xl font-semibold">
+                      {listData.title}
+                    </h1>
+                    {isEditor ||
+                      (isOwner && (
+                        <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                          <Pen className="cursor-pointer" size={20} />
+                        </div>
+                      ))}
+                  </div>
                 </div>
                 <div className="flex items-end gap-2">
+                  {hasUnsavedChanges && (
+                    <Button variant="outline" size="sm" className="cursor-pointer">
+                      <RefreshCcw size={24} /> Reset Changes
+                    </Button>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="cursor-pointer">
@@ -227,8 +251,8 @@ export default function ListDetailPage() {
                 </div>
               </div>
             </div>
-            <div className="sticky top-0 col-span-1 h-screen overflow-y-auto p-4">
-              {data && data.data !== listData ? (
+            <div className="border-box sticky top-0 col-span-1 flex h-[calc(100vh-60px)] flex-col overflow-y-auto p-4">
+              {hasUnsavedChanges ? (
                 <div className="flex w-full items-center gap-2 rounded-md bg-yellow-500 px-4 py-2 text-white">
                   <TriangleAlert size={18} />
                   <p className={'text-sm font-semibold'}>Unsaved changes!</p>
@@ -275,22 +299,34 @@ export default function ListDetailPage() {
                   </HoverCard>
                 </div>
                 <Separator className="my-2" />
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">Collaborators</h2>
-                  {isOwner && (
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm text-gray-500">Edit</p>
-                      <Pen className="inline-block stroke-gray-500" size={14} />
-                    </div>
-                  )}
-                </div>
                 <div>
-                  {listData.collaborators.map((collab) => (
-                    <div key={collab.id} className="mt-2">
-                      {collab.user.username} - {collab.role}
-                    </div>
-                  ))}
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold">Collaborators</h2>
+                    {isOwner && (
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-gray-500">Edit</p>
+                        <Pen className="inline-block stroke-gray-500" size={14} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-2 max-h-[250px] overflow-y-auto">
+                    {listData.collaborators.map((collab) => (
+                      <div key={collab.id} className="mt-2">
+                        {collab.user.username} - {collab.role}
+                      </div>
+                    ))}
+                  </div>
                 </div>
+              </div>
+              <div className="mt-auto flex w-full flex-col items-center justify-center gap-2">
+                <Button
+                  disabled={!hasUnsavedChanges}
+                  variant="default"
+                  className="w-full cursor-pointer"
+                  onClick={() => console.log('Save changes')}
+                >
+                  {hasUnsavedChanges ? 'Save changes' : 'No changes to save'}
+                </Button>
               </div>
             </div>
           </section>

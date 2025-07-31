@@ -4,7 +4,8 @@ import { Checkbox } from './checkbox';
 import React, { useState } from 'react';
 import { Badge } from './badge';
 import { Trash } from 'lucide-react';
-
+import { Button } from './button';
+import { Popover, PopoverContent, PopoverTrigger } from './popover';
 type Props = {
   item: Partial<Item> | Item;
   onUpdate: (updatedItem: Partial<Item>) => void;
@@ -15,6 +16,7 @@ export function ItemElement({ item, onUpdate }: Props) {
   const [isEditingQty, setIsEditingQty] = useState(false);
   const [isEditingCategory, setIsEditingCategory] = useState(false);
   const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [isDeleteOpen, setDeleteOpen] = useState(false);
 
   const [name, setName] = useState(item.name);
   const [quantity, setQuantity] = useState(item.quantity ?? 1);
@@ -145,9 +147,41 @@ export function ItemElement({ item, onUpdate }: Props) {
           </span>
         )}
       </div>
-      <div className="bg-sidebar group border-sidebar hover:border-border ml-4 flex cursor-pointer items-center justify-center rounded-md border p-2 transition-colors">
-        <Trash className="group-hover:stroke-destructive stroke-gray-500 transition" />
-      </div>
+      <Popover open={isDeleteOpen} onOpenChange={setDeleteOpen}>
+        <PopoverTrigger>
+          <div className="group border-sidebar hover:border-border flex cursor-pointer items-center justify-center rounded-md border p-2 transition-colors">
+            <Trash className="group-hover:stroke-destructive stroke-gray-500 transition" />
+          </div>
+        </PopoverTrigger>
+        <PopoverContent>
+          <div>
+            <p className="mb-4 justify-center text-center text-sm text-gray-500">
+              Are you sure you want to delete this list?
+            </p>
+            <div className="grid grid-cols-2 gap-6">
+              <Button
+                className="cursor-pointer"
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="cursor-pointer"
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  setDeleteOpen(false);
+                }}
+              >
+                <Trash className="stroke-white" />
+                Delete
+              </Button>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
