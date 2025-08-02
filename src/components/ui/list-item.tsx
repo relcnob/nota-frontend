@@ -9,6 +9,7 @@ import { Button } from './button';
 import { Avatar, AvatarFallback } from './avatar';
 
 import { HoverCardTrigger, HoverCard, HoverCardContent } from './hover-card';
+import { Badge } from './badge';
 function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => void }) {
   const [isDeleteOpen, setDeleteOpen] = useState(false);
 
@@ -18,6 +19,13 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
         <div className="flex flex-row items-center gap-4">
           <h2 className="w-48 text-xl font-bold">{list.title}</h2>
           {list.description && <p className="w-36 text-sm text-gray-600">{list.description}</p>}
+        </div>
+        <div className="flex h-8 w-16 flex-row items-center gap-2">
+          {list.items.length > 0 && (
+            <Badge className="bg-primary text-primary-foreground">
+              {`${list.items.filter((item) => item.completed).length} / ${list.items.length}`}
+            </Badge>
+          )}
         </div>
         <div className="flex -space-x-2">
           {list.owner && (

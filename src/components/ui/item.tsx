@@ -9,9 +9,10 @@ import { Popover, PopoverContent, PopoverTrigger } from './popover';
 type Props = {
   item: Partial<Item> | Item;
   onUpdate: (updatedItem: Partial<Item>) => void;
+  onDelete: (id: string) => void;
 };
 
-export function ItemElement({ item, onUpdate }: Props) {
+export function ItemElement({ item, onUpdate, onDelete }: Props) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingQty, setIsEditingQty] = useState(false);
   const [isEditingCategory, setIsEditingCategory] = useState(false);
@@ -38,7 +39,7 @@ export function ItemElement({ item, onUpdate }: Props) {
   };
   const handleCategorySubmit = () => {
     setIsEditingCategory(false);
-    if (item.category !== category) {
+    if (category !== item.category) {
       onUpdate({ id: item.id, category });
     }
   };
@@ -172,6 +173,8 @@ export function ItemElement({ item, onUpdate }: Props) {
                 variant="destructive"
                 size="sm"
                 onClick={() => {
+                  if (!item.id) return;
+                  onDelete(item.id);
                   setDeleteOpen(false);
                 }}
               >

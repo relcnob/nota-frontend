@@ -10,6 +10,7 @@ export type Item = {
   completed?: boolean;
   completedAt?: string;
   addedBy?: User;
+  addedById?: string;
   createdAt: string;
   updatedAt: string;
 };

@@ -26,8 +26,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -43,6 +41,8 @@ import {
 import { ItemElement } from '@/components/ui/item';
 import { Item } from '@/util/types/item';
 import Link from 'next/link';
+import { useBulkItems } from '@/hooks/useBulkItems';
+
 const SortOptions = [
   { label: 'Name (A-Z)', value: 'name_asc' },
   { label: 'Name (Z-A)', value: 'name_desc' },
@@ -62,10 +62,20 @@ export default function ListDetailPage() {
   const [itemCategories, setItemCategories] = useState<string[]>([]);
   const [itemsToBeAdded, setItemsToBeAdded] = useState<Partial<Item>[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [title, setTitle] = useState('');
+
   const params = useParams();
   const id = params?.id as string;
   const auth = useAuth();
+
   const { data, isLoading, isError } = useList(id);
+  const { bulkUpdateItems, bulkCreateItems } = useBulkItems();
+  useEffect(() => {
+    if (data && !isLoading) {
+      setListData(data.data);
+    }
+  }, [data, isLoading]);
 
   const updateItemLocally = async (updatedItem: Partial<Item>) => {
     if (!listData || !auth.user) return;
@@ -77,20 +87,27 @@ export default function ListDetailPage() {
     setListData({ ...listData, items: updatedItems });
   };
 
+  const deleteItemLocally = (itemId: string) => {
+    if (!listData) return;
+
+    const updatedItems = listData.items.filter((item) => item.id !== itemId);
+    setListData({ ...listData, items: updatedItems });
+  };
+
   const updateItemToBeCreatedLocally = (updatedItem: Partial<Item>) => {
     setItemsToBeAdded((prev) =>
       prev.map((item) => (item.id === updatedItem.id ? { ...item, ...updatedItem } : item)),
     );
   };
 
-  useEffect(() => {
-    if (data) {
-      console.log('List data:', data.data);
-      setListData(data.data);
-    }
-  }, [data]);
+  const deleteItemToBeCreatedLocally = (itemId: string) => {
+    setItemsToBeAdded((prev) => prev.filter((item) => item.id !== itemId));
+  };
 
   useEffect(() => {
+    if (!listData) return;
+    setTitle(listData.title);
+
     if ((data && listData !== data.data) || itemsToBeAdded.length > 0) {
       setHasUnsavedChanges(true);
     } else {
@@ -119,15 +136,80 @@ export default function ListDetailPage() {
   const createNewItem = () => {
     const newItem: Partial<Item> = {
       id: `new-${Date.now()}`,
-      name: '',
+      name: 'Untitled',
       quantity: 1,
       category: '',
       notes: '',
       completed: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      listId: listData?.id || '',
+      addedById: auth.user?.id || '',
     };
     setItemsToBeAdded((prev) => [...prev, newItem]);
+  };
+
+  const setHandlers = {
+    Title: (value: string) => {
+      setTitle(value);
+      setHasUnsavedChanges(true);
+    },
+  };
+
+  const submitHandlers = {
+    Title: () => {
+      setIsEditingTitle(false);
+      if (title !== listData?.title) {
+        setListData((prev) => (prev ? { ...prev, title } : null));
+        setHasUnsavedChanges(true);
+      }
+    },
+  };
+
+  const resetChanges = () => {
+    setListData(data?.data || null);
+    setItemsToBeAdded([]);
+  };
+
+  const saveChanges = () => {
+    if (!listData || !auth.user) return;
+
+    const wereItemsChanged = listData.items.some((item) => {
+      const originalItem = data?.data.items.find((i) => i.id === item.id);
+      if (!originalItem) return false;
+
+      return (
+        originalItem.name !== item.name ||
+        originalItem.quantity !== item.quantity ||
+        originalItem.category !== item.category ||
+        originalItem.notes !== item.notes ||
+        originalItem.completed !== item.completed
+      );
+    });
+
+    if (itemsToBeAdded.length > 0) {
+      const stripIdFromNewItems = itemsToBeAdded
+        .map((item) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { id, ...rest } = item;
+          rest.listId = listData.id;
+          rest.createdAt = new Date().toISOString();
+          return rest;
+        })
+        .filter((item): item is Partial<Item> => item !== undefined);
+      setItemsToBeAdded([]);
+      bulkCreateItems.mutate(stripIdFromNewItems);
+    }
+
+    if (wereItemsChanged && listData.items.length > 0) {
+      const updatedItems = listData.items.map((item) => ({
+        ...item,
+        updatedAt: new Date().toISOString(),
+      }));
+      bulkUpdateItems.mutate(updatedItems);
+    }
+
+    setHasUnsavedChanges(false);
   };
 
   return (
@@ -147,20 +229,52 @@ export default function ListDetailPage() {
                     <ChevronLeft size={24} />
                   </Link>
                   <div className="group flex items-center gap-2">
-                    <h1 className="max-w-[10rem] cursor-pointer text-2xl font-semibold">
-                      {listData.title}
-                    </h1>
-                    {isEditor ||
-                      (isOwner && (
-                        <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                          <Pen className="cursor-pointer" size={20} />
-                        </div>
-                      ))}
+                    {isEditingTitle ? (
+                      <input
+                        autoFocus
+                        type="text"
+                        className="w-[20rem] rounded border px-2 py-0 text-lg"
+                        value={title}
+                        onChange={(e) => setHandlers.Title(e.target.value)}
+                        onBlur={submitHandlers.Title}
+                        onKeyDown={(e) => e.key === 'Enter' && submitHandlers.Title()}
+                      />
+                    ) : (
+                      <>
+                        <HoverCard>
+                          <HoverCardTrigger className="cursor-pointer">
+                            <div
+                              className="group flex items-center gap-2"
+                              onClick={() => (isEditor || isOwner) && setIsEditingTitle(true)}
+                            >
+                              <h1
+                                className={`${listData.title.length > 0 ? '' : 'text-gray-500'} max-w-[20rem] overflow-hidden text-2xl font-semibold text-ellipsis whitespace-nowrap`}
+                              >
+                                {listData.title.length > 0 ? listData.title : 'Untitled'}
+                              </h1>
+                              <div className="mt-1 flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                                {(isEditor || isOwner) && <Pen size={18} />}
+                              </div>
+                            </div>
+                          </HoverCardTrigger>
+                          <HoverCardContent
+                            className={`w-fit ${listData.title.length > 0 ? '' : 'opacity-0'}`}
+                          >
+                            <p className="text-sm">{listData.title}</p>
+                          </HoverCardContent>
+                        </HoverCard>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-end gap-2">
                   {hasUnsavedChanges && (
-                    <Button variant="outline" size="sm" className="cursor-pointer">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="cursor-pointer"
+                      onClick={resetChanges}
+                    >
                       <RefreshCcw size={24} /> Reset Changes
                     </Button>
                   )}
@@ -226,7 +340,12 @@ export default function ListDetailPage() {
               <div className="space-y-4">
                 {listData.items.length > 0 &&
                   listData.items.map((item) => (
-                    <ItemElement key={item.id} item={item} onUpdate={updateItemLocally} />
+                    <ItemElement
+                      key={item.id}
+                      item={item}
+                      onUpdate={updateItemLocally}
+                      onDelete={() => deleteItemLocally(item.id)}
+                    />
                   ))}
                 {itemsToBeAdded.length > 0 &&
                   itemsToBeAdded.map((item, index) => (
@@ -234,6 +353,9 @@ export default function ListDetailPage() {
                       key={`new-${index}`}
                       item={item}
                       onUpdate={updateItemToBeCreatedLocally}
+                      onDelete={(id: string) => {
+                        deleteItemToBeCreatedLocally(id);
+                      }}
                     />
                   ))}
                 {listData.items.length === 0 && itemsToBeAdded.length === 0 && (
@@ -303,10 +425,18 @@ export default function ListDetailPage() {
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold">Collaborators</h2>
                     {isOwner && (
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm text-gray-500">Edit</p>
-                        <Pen className="inline-block stroke-gray-500" size={14} />
-                      </div>
+                      <Link
+                        className="group flex items-center gap-2"
+                        href={`/dashboard/lists/${id}/collaborators`}
+                      >
+                        <p className="group-hover:text-primary text-sm text-gray-500 transition">
+                          Edit
+                        </p>
+                        <Pen
+                          className="group-hover:stroke-primary inline-block stroke-gray-500 transition"
+                          size={14}
+                        />
+                      </Link>
                     )}
                   </div>
                   <div className="mt-2 max-h-[250px] overflow-y-auto">
@@ -322,8 +452,9 @@ export default function ListDetailPage() {
                 <Button
                   disabled={!hasUnsavedChanges}
                   variant="default"
+                  size="lg"
                   className="w-full cursor-pointer"
-                  onClick={() => console.log('Save changes')}
+                  onClick={saveChanges}
                 >
                   {hasUnsavedChanges ? 'Save changes' : 'No changes to save'}
                 </Button>
