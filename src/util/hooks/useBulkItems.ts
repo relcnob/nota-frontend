@@ -41,8 +41,30 @@ export function useBulkItems() {
     },
   });
 
+  const removeMutation = useMutation({
+    mutationFn: async (itemIds: string[]) => {
+      const res = await api.delete('/items/bulk', {
+        data: { items: itemIds.map((id) => ({ id })) },
+      });
+      if (res.status !== 200) {
+        throw new Error('Bulk delete failed');
+      }
+      return res.data.data as string[];
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
+      queryClient.invalidateQueries({ queryKey: ['list'] });
+    },
+    onError: (err) => {
+      console.error('🔴 Bulk DELETE failed:', err);
+    },
+  });
+
   return {
     bulkUpdateItems: updateMutation,
     bulkCreateItems: createMutation,
+    bulkRemoveItems: removeMutation,
+    isPending: updateMutation.isPending || createMutation.isPending || removeMutation.isPending,
+    isError: updateMutation.isError || createMutation.isError || removeMutation.isError,
   };
 }

@@ -1,10 +1,11 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useList } from '@/hooks/useList';
+import { useList } from '@/util/hooks/useList';
 import {
   ArrowUpDown,
   Calendar,
+  CheckCircle2,
   ChevronLeft,
   CircleCheck,
   CircleUserRound,
@@ -41,7 +42,8 @@ import {
 import { ItemElement } from '@/components/ui/item';
 import { Item } from '@/util/types/item';
 import Link from 'next/link';
-import { useBulkItems } from '@/hooks/useBulkItems';
+import { useBulkItems } from '@/util/hooks/useBulkItems';
+import { toast } from 'sonner';
 
 const SortOptions = [
   { label: 'Name (A-Z)', value: 'name_asc' },
@@ -61,16 +63,18 @@ export default function ListDetailPage() {
   const [listData, setListData] = useState<List | null>(null);
   const [itemCategories, setItemCategories] = useState<string[]>([]);
   const [itemsToBeAdded, setItemsToBeAdded] = useState<Partial<Item>[]>([]);
+  const [itemsToBeUpdated, setItemsToBeUpdated] = useState<Partial<Item>[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState('');
+  const [itemsToBeRemoved, setItemsToBeRemoved] = useState<string[]>([]);
 
   const params = useParams();
   const id = params?.id as string;
   const auth = useAuth();
 
   const { data, isLoading, isError } = useList(id);
-  const { bulkUpdateItems, bulkCreateItems } = useBulkItems();
+  const { bulkUpdateItems, bulkCreateItems, bulkRemoveItems } = useBulkItems();
   useEffect(() => {
     if (data && !isLoading) {
       setListData(data.data);
@@ -84,6 +88,21 @@ export default function ListDetailPage() {
       item.id === updatedItem.id ? { ...item, ...updatedItem } : item,
     );
 
+    setItemsToBeUpdated((prev) => {
+      const existingIndex = prev.findIndex((item) => item.id === updatedItem.id);
+
+      if (existingIndex !== -1) {
+        const updated = [...prev];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          ...updatedItem,
+        };
+        return updated;
+      }
+
+      return [...prev, updatedItem];
+    });
+
     setListData({ ...listData, items: updatedItems });
   };
 
@@ -92,6 +111,7 @@ export default function ListDetailPage() {
 
     const updatedItems = listData.items.filter((item) => item.id !== itemId);
     setListData({ ...listData, items: updatedItems });
+    setItemsToBeRemoved((prev) => [...prev, itemId]);
   };
 
   const updateItemToBeCreatedLocally = (updatedItem: Partial<Item>) => {
@@ -174,43 +194,40 @@ export default function ListDetailPage() {
   const saveChanges = () => {
     if (!listData || !auth.user) return;
 
-    const wereItemsChanged = listData.items.some((item) => {
-      const originalItem = data?.data.items.find((i) => i.id === item.id);
-      if (!originalItem) return false;
-
-      return (
-        originalItem.name !== item.name ||
-        originalItem.quantity !== item.quantity ||
-        originalItem.category !== item.category ||
-        originalItem.notes !== item.notes ||
-        originalItem.completed !== item.completed
-      );
-    });
-
     if (itemsToBeAdded.length > 0) {
       const stripIdFromNewItems = itemsToBeAdded
         .map((item) => {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { id, ...rest } = item;
-          rest.listId = listData.id;
-          rest.createdAt = new Date().toISOString();
           return rest;
         })
         .filter((item): item is Partial<Item> => item !== undefined);
-      setItemsToBeAdded([]);
       bulkCreateItems.mutate(stripIdFromNewItems);
     }
 
-    if (wereItemsChanged && listData.items.length > 0) {
-      const updatedItems = listData.items.map((item) => ({
-        ...item,
-        updatedAt: new Date().toISOString(),
-      }));
-      bulkUpdateItems.mutate(updatedItems);
+    if (itemsToBeUpdated.length > 0) {
+      console.log(itemsToBeUpdated);
+      bulkUpdateItems.mutate(itemsToBeUpdated);
     }
 
-    setHasUnsavedChanges(false);
+    if (itemsToBeRemoved.length > 0) {
+      bulkRemoveItems.mutate(itemsToBeRemoved);
+    }
   };
+
+  useEffect(() => {
+    if (bulkCreateItems.isSuccess || bulkUpdateItems.isSuccess || bulkRemoveItems.isSuccess) {
+      toast('Changes saved successfully!', {
+        id: 'bulk-save-success',
+        position: 'top-center',
+        dismissible: true,
+        icon: <CheckCircle2 size={16} />,
+      });
+      setItemsToBeAdded([]);
+      setItemsToBeRemoved([]);
+      setHasUnsavedChanges(false);
+    }
+  }, [bulkCreateItems.isSuccess, bulkUpdateItems.isSuccess, bulkRemoveItems.isSuccess]);
 
   return (
     <div className={'w-full'}>
@@ -339,25 +356,29 @@ export default function ListDetailPage() {
               <Separator className="my-4" />
               <div className="space-y-4">
                 {listData.items.length > 0 &&
-                  listData.items.map((item) => (
-                    <ItemElement
-                      key={item.id}
-                      item={item}
-                      onUpdate={updateItemLocally}
-                      onDelete={() => deleteItemLocally(item.id)}
-                    />
-                  ))}
+                  listData.items
+                    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+                    .map((item) => (
+                      <ItemElement
+                        key={item.id}
+                        item={item}
+                        onUpdate={updateItemLocally}
+                        onDelete={() => deleteItemLocally(item.id)}
+                      />
+                    ))}
                 {itemsToBeAdded.length > 0 &&
-                  itemsToBeAdded.map((item, index) => (
-                    <ItemElement
-                      key={`new-${index}`}
-                      item={item}
-                      onUpdate={updateItemToBeCreatedLocally}
-                      onDelete={(id: string) => {
-                        deleteItemToBeCreatedLocally(id);
-                      }}
-                    />
-                  ))}
+                  itemsToBeAdded
+                    .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
+                    .map((item, index) => (
+                      <ItemElement
+                        key={`new-${index}`}
+                        item={item}
+                        onUpdate={updateItemToBeCreatedLocally}
+                        onDelete={(id: string) => {
+                          deleteItemToBeCreatedLocally(id);
+                        }}
+                      />
+                    ))}
                 {listData.items.length === 0 && itemsToBeAdded.length === 0 && (
                   <p className="text-gray-500">No items in this list.</p>
                 )}

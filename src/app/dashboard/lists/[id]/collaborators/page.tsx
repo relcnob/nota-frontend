@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useList } from '@/hooks/useList';
+import { useList } from '@/util/hooks/useList';
 
 export default function ListDetailPage() {
   const params = useParams();

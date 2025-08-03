@@ -3,7 +3,7 @@
 import ListItem from '@/components/ui/list-item';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/context/auth-context';
-import { useLists } from '@/hooks/useLists';
+import { useLists } from '@/util/hooks/useLists';
 import { useEffect, useState } from 'react';
 
 export default function ListsPage() {

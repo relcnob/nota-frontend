@@ -3,7 +3,7 @@
 import { List } from '@/util/types/list';
 import React, { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
-import { Calendar, Pencil, Trash } from 'lucide-react';
+import { Calendar, Pencil, Trash, Check } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from './button';
 import { Avatar, AvatarFallback } from './avatar';
@@ -20,14 +20,17 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
           <h2 className="w-48 text-xl font-bold">{list.title}</h2>
           {list.description && <p className="w-36 text-sm text-gray-600">{list.description}</p>}
         </div>
-        <div className="flex h-8 w-16 flex-row items-center gap-2">
+        <div className="flex h-8 w-24 flex-row items-center justify-center gap-2">
           {list.items.length > 0 && (
             <Badge className="bg-primary text-primary-foreground">
               {`${list.items.filter((item) => item.completed).length} / ${list.items.length}`}
+              {list.items.filter((item) => item.completed).length === list.items.length && (
+                <Check className="stroke-primary-foreground ml-1" size={12} />
+              )}
             </Badge>
           )}
         </div>
-        <div className="flex -space-x-2">
+        <div className="flex w-[100px] items-center justify-center -space-x-2">
           {list.owner && (
             <HoverCard>
               <HoverCardTrigger asChild>
