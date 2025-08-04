@@ -6,6 +6,7 @@ import {
   ArrowUpDown,
   Calendar,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   CircleCheck,
   CircleUserRound,
@@ -67,8 +68,11 @@ export default function ListDetailPage() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [editedList, setEditedList] = useState<Partial<List>>({});
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [itemsToBeRemoved, setItemsToBeRemoved] = useState<string[]>([]);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   const params = useParams();
   const id = params?.id as string;
@@ -133,6 +137,7 @@ export default function ListDetailPage() {
   useEffect(() => {
     if (!listData) return;
     setTitle(listData.title);
+    setDescription(listData.description || '');
 
     if ((data && listData !== data.data) || itemsToBeAdded.length > 0) {
       setHasUnsavedChanges(true);
@@ -181,6 +186,10 @@ export default function ListDetailPage() {
       setTitle(value);
       setHasUnsavedChanges(true);
     },
+    Description: (value: string) => {
+      setDescription(value);
+      setHasUnsavedChanges(true);
+    },
   };
 
   const submitHandlers = {
@@ -189,6 +198,14 @@ export default function ListDetailPage() {
       if (title !== listData?.title) {
         setListData((prev) => (prev ? { ...prev, title } : null));
         setEditedList((prev) => ({ ...prev, title }));
+        setHasUnsavedChanges(true);
+      }
+    },
+    Description: () => {
+      setIsEditingDescription(false);
+      if (description !== listData?.description) {
+        setListData((prev) => (prev ? { ...prev, description } : null));
+        setEditedList((prev) => ({ ...prev, description }));
         setHasUnsavedChanges(true);
       }
     },
@@ -429,8 +446,63 @@ export default function ListDetailPage() {
               ) : (
                 <div className="block h-[36px] w-full"></div>
               )}
-              <h2 className="mt-6 mb-2 text-xl font-semibold">About</h2>
-              <p className="text-sm">{listData.description || 'No description provided.'}</p>
+              <div className="mt-6 mb-2 flex items-center justify-between">
+                <h2 className="text-xl font-semibold">About</h2>
+                {isOwner || isEditor ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="cursor-pointer"
+                    disabled={isEditingDescription}
+                    onClick={() => setIsEditingDescription(true)}
+                  >
+                    <Pen size={16} /> Edit
+                  </Button>
+                ) : (
+                  <></>
+                )}
+              </div>
+              {isEditingDescription ? (
+                <textarea
+                  autoFocus
+                  className="min-h-[150px] w-full rounded border p-2 text-sm"
+                  value={description}
+                  onChange={(e) => setHandlers.Description(e.target.value)}
+                  onBlur={() => {
+                    setIsEditingDescription(false);
+                    submitHandlers.Description();
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && submitHandlers.Description()}
+                />
+              ) : (
+                <div className="flex w-full flex-col">
+                  <p className="mb-0 text-sm text-gray-500">
+                    {listData.description
+                      ? isDescriptionExpanded
+                        ? listData.description
+                        : listData.description.length > 120
+                          ? listData.description.slice(0, 120) + '...'
+                          : listData.description
+                      : 'No description provided.'}
+                  </p>
+                  {listData?.description && listData.description.length > 120 && (
+                    <Button
+                      variant="ghost"
+                      className="mx-auto cursor-pointer text-xs"
+                      onClick={() => setIsDescriptionExpanded((prev) => !prev)}
+                    >
+                      <ChevronDown
+                        className={`inline-block transition-transform ${
+                          isDescriptionExpanded ? 'rotate-180' : ''
+                        }`}
+                        size={16}
+                      />
+
+                      {isDescriptionExpanded ? 'Show less' : 'Show more'}
+                    </Button>
+                  )}
+                </div>
+              )}
               <Separator className="my-2" />
               <div className="my-2 flex flex-col gap-2">
                 <div className="flex items-center">
