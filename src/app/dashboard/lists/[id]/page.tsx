@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useList } from '@/util/hooks/useList';
+import { useList, useUpdateList } from '@/util/hooks/useList';
 import {
   ArrowUpDown,
   Calendar,
@@ -65,6 +65,7 @@ export default function ListDetailPage() {
   const [itemsToBeAdded, setItemsToBeAdded] = useState<Partial<Item>[]>([]);
   const [itemsToBeUpdated, setItemsToBeUpdated] = useState<Partial<Item>[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [editedList, setEditedList] = useState<Partial<List>>({});
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState('');
   const [itemsToBeRemoved, setItemsToBeRemoved] = useState<string[]>([]);
@@ -72,7 +73,12 @@ export default function ListDetailPage() {
   const params = useParams();
   const id = params?.id as string;
   const auth = useAuth();
-
+  const {
+    mutate,
+    isPending,
+    isError: isListMutationError,
+    isSuccess: isListMutationSuccess,
+  } = useUpdateList();
   const { data, isLoading, isError } = useList(id);
   const { bulkUpdateItems, bulkCreateItems, bulkRemoveItems } = useBulkItems();
   useEffect(() => {
@@ -133,6 +139,7 @@ export default function ListDetailPage() {
     } else {
       setHasUnsavedChanges(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listData, itemsToBeAdded]);
 
   useEffect(() => {
@@ -181,6 +188,7 @@ export default function ListDetailPage() {
       setIsEditingTitle(false);
       if (title !== listData?.title) {
         setListData((prev) => (prev ? { ...prev, title } : null));
+        setEditedList((prev) => ({ ...prev, title }));
         setHasUnsavedChanges(true);
       }
     },
@@ -188,6 +196,7 @@ export default function ListDetailPage() {
 
   const resetChanges = () => {
     setListData(data?.data || null);
+    setEditedList({});
     setItemsToBeAdded([]);
   };
 
@@ -203,31 +212,48 @@ export default function ListDetailPage() {
         })
         .filter((item): item is Partial<Item> => item !== undefined);
       bulkCreateItems.mutate(stripIdFromNewItems);
+      setItemsToBeAdded([]);
     }
 
     if (itemsToBeUpdated.length > 0) {
-      console.log(itemsToBeUpdated);
       bulkUpdateItems.mutate(itemsToBeUpdated);
     }
 
     if (itemsToBeRemoved.length > 0) {
       bulkRemoveItems.mutate(itemsToBeRemoved);
+      setItemsToBeRemoved([]);
+    }
+
+    if (Object.keys(editedList).length > 0 || title !== listData.title) {
+      mutate({
+        id: listData.id,
+        ...editedList,
+      });
+      setEditedList({});
     }
   };
 
   useEffect(() => {
-    if (bulkCreateItems.isSuccess || bulkUpdateItems.isSuccess || bulkRemoveItems.isSuccess) {
+    if (
+      bulkCreateItems.isSuccess ||
+      bulkUpdateItems.isSuccess ||
+      bulkRemoveItems.isSuccess ||
+      isListMutationSuccess
+    ) {
       toast('Changes saved successfully!', {
         id: 'bulk-save-success',
         position: 'top-center',
         dismissible: true,
         icon: <CheckCircle2 size={16} />,
       });
-      setItemsToBeAdded([]);
-      setItemsToBeRemoved([]);
       setHasUnsavedChanges(false);
     }
-  }, [bulkCreateItems.isSuccess, bulkUpdateItems.isSuccess, bulkRemoveItems.isSuccess]);
+  }, [
+    bulkCreateItems.isSuccess,
+    bulkUpdateItems.isSuccess,
+    bulkRemoveItems.isSuccess,
+    isListMutationSuccess,
+  ]);
 
   return (
     <div className={'w-full'}>
@@ -471,7 +497,7 @@ export default function ListDetailPage() {
               </div>
               <div className="mt-auto flex w-full flex-col items-center justify-center gap-2">
                 <Button
-                  disabled={!hasUnsavedChanges}
+                  disabled={!hasUnsavedChanges || isPending}
                   variant="default"
                   size="lg"
                   className="w-full cursor-pointer"
