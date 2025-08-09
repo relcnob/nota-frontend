@@ -1,9 +1,11 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import ListItem from '@/components/ui/list-item';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/context/auth-context';
 import { useLists } from '@/util/hooks/useLists';
+import { Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function ListsPage() {
@@ -23,11 +25,30 @@ export default function ListsPage() {
   }, [isLoadingLists, listData]);
 
   return (
-    <div className="w-full">
+    <div className="w-full pt-4">
       {isLoadingLists && !listData ? (
-        <Skeleton className="mb-12 h-[36px] w-[200px] rounded-full" />
+        <div className="mb-4 flex w-full flex-col items-center justify-center gap-4">
+          <div className="mb-4 flex w-full flex-row items-center justify-between">
+            <Skeleton className="h-[36px] w-[200px] rounded-full" />
+            <Skeleton className="h-[36px] w-[100px] rounded-full" />
+          </div>
+          <Skeleton className="mb-4 h-[36px] w-full rounded-full" />
+        </div>
       ) : (
-        <h1 className="mb-12 text-3xl font-semibold">{`Your Lists (${lists.length})`}</h1>
+        <div className="flex w-full flex-col gap-4">
+          <div className="mb-4 flex w-full flex-row items-center justify-between">
+            <h1 className="text-3xl font-semibold">{`Your Lists (${lists.length})`}</h1>
+            <Button variant="outline" className="cursor-pointer">
+              <Plus /> Add List
+            </Button>
+          </div>
+          <div className="mb-4 grid w-full grid-cols-12 px-4 text-sm font-semibold text-gray-500">
+            <p className="col-span-3">Title</p>
+            <p className="col-span-3">Description</p>
+            <p className="col-span-2 w-full text-center">Tasks</p>
+            <p className="col-span-2 w-full text-center">Collaborators</p>
+          </div>
+        </div>
       )}
       <div className="mb-6 grid grid-cols-1 gap-4">
         {isLoadingLists && !listData && (

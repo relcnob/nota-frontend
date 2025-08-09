@@ -13,14 +13,55 @@ import { Badge } from './badge';
 function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => void }) {
   const [isDeleteOpen, setDeleteOpen] = useState(false);
 
+  const isLongTitle = list.title.length > 24;
+  const shortTitle = isLongTitle ? list.title.slice(0, 24) + '...' : list.title;
+
+  const isLongDescription = list.description && list.description.length > 32;
+  const shortDescription =
+    isLongDescription && list.description
+      ? list.description.slice(0, 32) + '...'
+      : list.description || 'No description';
+
   return (
     <div className={`bg-background flex flex-row rounded-lg border px-4 py-2`}>
-      <div className="ml-4 flex w-full flex-row items-center justify-between">
-        <div className="flex flex-row items-center gap-4">
-          <h2 className="w-48 text-xl font-bold">{list.title}</h2>
-          {list.description && <p className="w-36 text-sm text-gray-600">{list.description}</p>}
+      <div className="grid w-full grid-cols-12 items-center justify-between">
+        <div className="col-span-3 flex flex-row items-center gap-4">
+          {isLongTitle ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <h2 className="hover:text-primary text max-w-[16rem] cursor-pointer text-lg font-semibold text-gray-700">
+                  {shortTitle}
+                </h2>
+              </PopoverTrigger>
+              <PopoverContent>
+                <div className="flex flex-col">
+                  <h2 className="text-lg font-semibold text-gray-700">{list.title}</h2>
+                </div>
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <h2 className="text-lg font-semibold text-gray-700">{shortTitle}</h2>
+          )}
         </div>
-        <div className="flex h-8 w-24 flex-row items-center justify-center gap-2">
+        <div className="col-span-3 flex flex-row items-center gap-4">
+          {isLongDescription ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <p className="hover:text-primary cursor-pointer text-sm text-gray-500">
+                  {shortDescription}
+                </p>
+              </PopoverTrigger>
+              <PopoverContent>
+                <div className="flex flex-col px-2 py-1">
+                  <p className="text-sm text-gray-500">{list.description}</p>
+                </div>
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <p className="text-sm text-gray-500">{shortDescription}</p>
+          )}
+        </div>
+        <div className="col-span-2 flex h-8 w-24 w-full flex-row items-center justify-center gap-2">
           {list.items.length > 0 && (
             <Badge className="bg-primary text-primary-foreground">
               {`${list.items.filter((item) => item.completed).length} / ${list.items.length}`}
@@ -30,7 +71,7 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
             </Badge>
           )}
         </div>
-        <div className="flex w-[100px] items-center justify-center -space-x-2">
+        <div className="col-span-2 flex w-full items-center justify-center -space-x-2">
           {list.owner && (
             <HoverCard>
               <HoverCardTrigger asChild>
@@ -40,10 +81,13 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
                   </AvatarFallback>
                 </Avatar>
               </HoverCardTrigger>
-              <HoverCardContent>
-                <div className="flex flex-col">
+              <HoverCardContent asChild>
+                <div className="flex w-fit flex-col items-center gap-1">
                   <p className="text-sm font-semibold">{list.owner.username}</p>
-                  <p className="text-xs text-gray-500">Owner</p>
+                  <p className="text-xs text-gray-500">{list.owner.email}</p>
+                  <Badge variant="outline" className="mt-2 w-full">
+                    <p className="text-xs text-gray-500">Owner</p>
+                  </Badge>
                 </div>
               </HoverCardContent>
             </HoverCard>
@@ -57,53 +101,63 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
                   </AvatarFallback>
                 </Avatar>
               </HoverCardTrigger>
-              <HoverCardContent>
-                <div className="flex flex-col">
+              <HoverCardContent asChild>
+                <div className="flex w-fit flex-col items-center gap-1">
                   <p className="text-sm font-semibold">{collab.user.username}</p>
-                  <p className="text-xs text-gray-500">{collab.role}</p>
+                  <p className="text-xs text-gray-500">{collab.user.email}</p>
+                  <Badge variant="outline" className="mt-2 w-full">
+                    <p className="text-xs text-gray-500">{collab.role}</p>
+                  </Badge>
                 </div>
               </HoverCardContent>
             </HoverCard>
           ))}
         </div>
-        <div className="flex flex-row items-center gap-6">
+        <div className="col-span-2 flex flex-row items-center justify-end gap-6">
           <Popover>
-            <PopoverTrigger>
-              <div className="bg-sidebar group border-sidebar hover:border-border flex cursor-pointer items-center justify-center rounded-md border p-2 transition-colors">
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="icon" className="group cursor-pointer p-1">
                 <Calendar className="group-hover:stroke-primary stroke-gray-500 transition" />
-              </div>
+              </Button>
             </PopoverTrigger>
-            <PopoverContent>
-              <div className="flex flex-col">
-                <p className="text-sm text-gray-500">
-                  Created: {new Date(list.createdAt).toLocaleDateString()}{' '}
-                  {new Date(list.createdAt).toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
-                {list.updatedAt && list.createdAt !== list.updatedAt && (
-                  <p className="mt-2 text-sm text-gray-500">
-                    Updated: {new Date(list.updatedAt).toLocaleDateString()}{' '}
-                    {new Date(list.updatedAt).toLocaleTimeString('en-US', {
+            <PopoverContent asChild>
+              <div className="flex w-fit flex-col gap-2">
+                <Badge className="w-full">
+                  <p className="text-sm">
+                    Created: {new Date(list.createdAt).toLocaleDateString()}{' '}
+                    {new Date(list.createdAt).toLocaleTimeString('en-US', {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
                   </p>
+                </Badge>
+                {list.updatedAt && list.createdAt !== list.updatedAt && (
+                  <Badge className="w-full">
+                    <p className="text-sm">
+                      Updated: {new Date(list.updatedAt).toLocaleDateString()}{' '}
+                      {new Date(list.updatedAt).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                  </Badge>
                 )}
               </div>
             </PopoverContent>
           </Popover>
-          <Link href={`/dashboard/lists/${list.id}`} className="group">
-            <div className="bg-sidebar group border-sidebar hover:border-border flex cursor-pointer items-center justify-center rounded-md border p-2 transition-colors">
-              <Pencil className="group-hover:stroke-primary stroke-gray-500 transition" />
-            </div>
-          </Link>
+          <Button asChild variant="outline" size="icon" className="cursor-pointer p-1">
+            <Link href={`/dashboard/lists/${list.id}`} className="group">
+              <Pencil size={20} className="group-hover:stroke-primary stroke-gray-500 transition" />
+            </Link>
+          </Button>
           <Popover open={isDeleteOpen} onOpenChange={setDeleteOpen}>
-            <PopoverTrigger>
-              <div className="bg-sidebar group border-sidebar hover:border-border flex cursor-pointer items-center justify-center rounded-md border p-2 transition-colors">
-                <Trash className="group-hover:stroke-destructive stroke-gray-500 transition" />
-              </div>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="icon" className="group cursor-pointer p-1">
+                <Trash
+                  size={20}
+                  className="group-hover:stroke-destructive stroke-gray-500 transition"
+                />
+              </Button>
             </PopoverTrigger>
             <PopoverContent>
               <div>

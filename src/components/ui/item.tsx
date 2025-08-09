@@ -60,16 +60,15 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
   };
 
   return (
-    <div className="flex w-full items-center rounded-sm border py-2 pr-2 pl-4 hover:bg-gray-50">
+    <div className="grid w-full grid-cols-24 items-center rounded-sm border py-2 pr-2 pl-4 hover:bg-gray-50">
       <Checkbox
-        className="h-6 w-6 cursor-pointer"
+        className="col-span-1 h-6 w-6 cursor-pointer justify-self-center"
         checked={item.completed}
         onCheckedChange={(v: boolean) => {
           handleCompletedSubmit(v);
         }}
       />
-
-      <div className="ml-4 flex-1">
+      <div className="col-span-6 ml-4 flex-1">
         {isEditingName ? (
           <input
             autoFocus
@@ -91,11 +90,11 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
           <div className="text-xs text-gray-500">{formatRelativeDate(item.createdAt)}</div>
         )}
       </div>
-      <div className="ml-4 flex-1">
+      <div className="col-span-8 ml-4 flex-1">
         {isEditingNotes ? (
           <input
             autoFocus
-            className="w-48 rounded border px-2 py-0 text-sm"
+            className="w-full rounded border px-2 py-0 text-sm"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             onBlur={handleNotesSubmit}
@@ -103,18 +102,18 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
           />
         ) : (
           <div
-            className={`max-w-sm cursor-pointer px-2 text-xs font-medium ${!item.notes ? 'text-gray-400' : ''}`}
+            className={`max-w-full cursor-pointer px-2 text-xs font-medium ${!item.notes ? 'text-gray-400' : ''}`}
             onClick={() => setIsEditingNotes(true)}
           >
             {item.notes || 'No notes'}
           </div>
         )}
       </div>
-      <div className="ml-4 flex-1">
+      <div className="col-span-4 ml-4 flex justify-center">
         {isEditingCategory ? (
           <input
             autoFocus
-            className="w-48 rounded border px-2 py-0 text-sm"
+            className="w-full rounded border px-2 py-0 text-sm"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             onBlur={handleCategorySubmit}
@@ -130,29 +129,35 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
           </Badge>
         )}
       </div>
-
-      <div className="ml-4 text-sm text-gray-500">
+      <div className="col-span-3 mx-6 text-sm text-gray-500">
         {isEditingQty ? (
           <input
             autoFocus
             type="number"
-            className="w-12 rounded border px-2 py-1 text-sm"
+            className="w-20 rounded border px-2 py-1 text-sm"
             value={quantity}
             onChange={(e) => setQuantity(Number(e.target.value))}
             onBlur={handleQtySubmit}
             onKeyDown={(e) => e.key === 'Enter' && handleQtySubmit()}
           />
         ) : (
-          <span className="flex w-[48px] cursor-pointer" onClick={() => setIsEditingQty(true)}>
+          <span className="flex w-[64px] cursor-pointer" onClick={() => setIsEditingQty(true)}>
             x {item.quantity ?? 1}
           </span>
         )}
       </div>
       <Popover open={isDeleteOpen} onOpenChange={setDeleteOpen}>
-        <PopoverTrigger>
-          <div className="group border-sidebar hover:border-border flex cursor-pointer items-center justify-center rounded-md border p-2 transition-colors">
-            <Trash className="group-hover:stroke-destructive stroke-gray-500 transition" />
-          </div>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="group col-span-2 cursor-pointer justify-self-end p-1"
+          >
+            <Trash
+              className="group-hover:stroke-destructive stroke-gray-500 transition"
+              size={20}
+            />
+          </Button>
         </PopoverTrigger>
         <PopoverContent>
           <div>
@@ -178,7 +183,7 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
                   setDeleteOpen(false);
                 }}
               >
-                <Trash className="stroke-white" />
+                <Trash className="stroke-white" size={20} />
                 Delete
               </Button>
             </div>
