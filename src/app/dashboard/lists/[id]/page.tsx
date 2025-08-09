@@ -446,63 +446,65 @@ export default function ListDetailPage() {
               ) : (
                 <div className="block h-[36px] w-full"></div>
               )}
-              <div className="mt-6 mb-2 flex items-center justify-between">
-                <h2 className="text-xl font-semibold">About</h2>
-                {isOwner || isEditor ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="cursor-pointer"
-                    disabled={isEditingDescription}
-                    onClick={() => setIsEditingDescription(true)}
-                  >
-                    <Pen size={16} /> Edit
-                  </Button>
-                ) : (
-                  <></>
-                )}
-              </div>
-              {isEditingDescription ? (
-                <textarea
-                  autoFocus
-                  className="min-h-[150px] w-full rounded border p-2 text-sm"
-                  value={description}
-                  onChange={(e) => setHandlers.Description(e.target.value)}
-                  onBlur={() => {
-                    setIsEditingDescription(false);
-                    submitHandlers.Description();
-                  }}
-                  onKeyDown={(e) => e.key === 'Enter' && submitHandlers.Description()}
-                />
-              ) : (
-                <div className="flex w-full flex-col">
-                  <p className="mb-0 text-sm text-gray-500">
-                    {listData.description
-                      ? isDescriptionExpanded
-                        ? listData.description
-                        : listData.description.length > 120
-                          ? listData.description.slice(0, 120) + '...'
-                          : listData.description
-                      : 'No description provided.'}
-                  </p>
-                  {listData?.description && listData.description.length > 120 && (
+              <div className="group flex flex-col">
+                <div className="mt-6 mb-2 flex items-center justify-between">
+                  <h2 className="text-xl font-semibold">About</h2>
+                  {isOwner || isEditor ? (
                     <Button
                       variant="ghost"
-                      className="mx-auto cursor-pointer text-xs"
-                      onClick={() => setIsDescriptionExpanded((prev) => !prev)}
+                      size="sm"
+                      className="cursor-pointer opacity-0 transition-opacity group-hover:opacity-100"
+                      disabled={isEditingDescription}
+                      onClick={() => setIsEditingDescription(true)}
                     >
-                      <ChevronDown
-                        className={`inline-block transition-transform ${
-                          isDescriptionExpanded ? 'rotate-180' : ''
-                        }`}
-                        size={16}
-                      />
-
-                      {isDescriptionExpanded ? 'Show less' : 'Show more'}
+                      <Pen size={16} /> Edit
                     </Button>
+                  ) : (
+                    <></>
                   )}
                 </div>
-              )}
+                {isEditingDescription ? (
+                  <textarea
+                    autoFocus
+                    className="min-h-[150px] w-full rounded border p-2 text-sm"
+                    value={description}
+                    onChange={(e) => setHandlers.Description(e.target.value)}
+                    onBlur={() => {
+                      setIsEditingDescription(false);
+                      submitHandlers.Description();
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && submitHandlers.Description()}
+                  />
+                ) : (
+                  <div className="flex w-full flex-col">
+                    <p className="mb-0 text-sm text-gray-500">
+                      {listData.description
+                        ? isDescriptionExpanded
+                          ? listData.description
+                          : listData.description.length > 120
+                            ? listData.description.slice(0, 120) + '...'
+                            : listData.description
+                        : 'No description provided.'}
+                    </p>
+                    {listData?.description && listData.description.length > 120 && (
+                      <Button
+                        variant="ghost"
+                        className="mx-auto cursor-pointer text-xs"
+                        onClick={() => setIsDescriptionExpanded((prev) => !prev)}
+                      >
+                        <ChevronDown
+                          className={`inline-block transition-transform ${
+                            isDescriptionExpanded ? 'rotate-180' : ''
+                          }`}
+                          size={16}
+                        />
+
+                        {isDescriptionExpanded ? 'Show less' : 'Show more'}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
               <Separator className="my-2" />
               <div className="my-2 flex flex-col gap-2">
                 <div className="flex items-center">
