@@ -46,7 +46,7 @@ export function useBulkItems() {
       const res = await api.delete('/items/bulk', {
         data: { items: itemIds.map((id) => ({ id })) },
       });
-      if (res.status !== 200) {
+      if (res.status !== 204) {
         throw new Error('Bulk delete failed');
       }
       return res.data.data as string[];

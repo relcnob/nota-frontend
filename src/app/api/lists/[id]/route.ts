@@ -31,32 +31,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const token = request.cookies.get('auth_token')?.value;
-    const body = await request.json();
-
-    const res = await fetch(`${BASE_URL}/lists`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      return NextResponse.json({ error: 'Failed to create list' }, { status: res.status });
-    }
-
-    const data = await res.json();
-    return NextResponse.json({ data });
-  } catch (err) {
-    console.error('🔴 Error creating list:', err);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  }
-}
-
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   const { id } = await params;
 

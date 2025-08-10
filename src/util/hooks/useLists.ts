@@ -9,8 +9,8 @@ type ListsResponse = {
   meta: {
     page: number;
     limit: number;
-    totalLists: boolean;
-    totalPages: boolean;
+    totalLists: number;
+    totalPages: number;
   };
 };
 
