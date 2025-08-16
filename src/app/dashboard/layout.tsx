@@ -7,12 +7,14 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AuthProvider } from '@/context/auth-context';
 import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Toaster } from '@/components/ui/sonner';
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
 
   return (
     <AuthProvider>
+      <Toaster />
       <SidebarProvider>
         <AppSidebar />
         <main className="flex h-screen w-full flex-col">
@@ -24,7 +26,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <h2 className="text-lg font-semibold">{`Hi ${user?.username} `}</h2>
             )}
           </section>
-          {children}
+          <section className="bg-background mx-auto w-full max-w-screen-xl px-4">
+            {children}
+          </section>
         </main>
       </SidebarProvider>
     </AuthProvider>
