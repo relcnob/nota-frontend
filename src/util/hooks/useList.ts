@@ -49,7 +49,7 @@ export function useDeleteList() {
   return useMutation({
     mutationFn: async (id: string) => {
       const res = await api.delete(`/lists/${id}`);
-      if (res.status !== 204) {
+      if (res.status !== 200) {
         throw new Error('Failed to delete list');
       }
       return res.data as List;

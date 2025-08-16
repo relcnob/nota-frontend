@@ -17,7 +17,7 @@ import { useLists } from '@/util/hooks/useLists';
 import { CheckCircle2, Plus, TriangleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useCreateList } from '@/util/hooks/useList';
+import { useCreateList, useDeleteList } from '@/util/hooks/useList';
 
 export default function ListsPage() {
   const { user } = useAuth();
@@ -32,6 +32,7 @@ export default function ListsPage() {
   const [listDescription, setListDescription] = useState('');
 
   const { mutate: createList, isSuccess: isListCreated } = useCreateList();
+  const { mutate: deleteList, isSuccess: isListDeleted } = useDeleteList();
 
   const handleDialogClose = () => {
     setIsDialogOpen(false);
@@ -68,9 +69,22 @@ export default function ListsPage() {
     }
   }, [isListCreated]);
 
+  useEffect(() => {
+    if (isListDeleted) {
+      toast('List deleted successfully', {
+        id: 'list-deleted',
+        position: 'top-center',
+        dismissible: true,
+        icon: <CheckCircle2 size={16} />,
+      });
+      refetch();
+    }
+  }, [isListDeleted]);
+
   const handleDelete = async (listId: string) => {
     if (!user || !listId) return;
     console.log('Deleting list with ID:', listId);
+    deleteList(listId);
   };
 
   useEffect(() => {
