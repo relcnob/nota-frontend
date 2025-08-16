@@ -83,7 +83,7 @@ export default function ListDetailPage() {
     isError: isListMutationError,
     isSuccess: isListMutationSuccess,
   } = useUpdateList();
-  const { data, isLoading, isError } = useList(id);
+  const { data, isLoading, isError, refetch } = useList(id);
   const { bulkUpdateItems, bulkCreateItems, bulkRemoveItems } = useBulkItems();
   useEffect(() => {
     if (data && !isLoading) {
@@ -264,6 +264,7 @@ export default function ListDetailPage() {
         icon: <CheckCircle2 size={16} />,
       });
       setHasUnsavedChanges(false);
+      refetch();
     }
   }, [
     bulkCreateItems.isSuccess,
@@ -525,7 +526,13 @@ export default function ListDetailPage() {
                 <div className="flex items-center">
                   <Calendar className="mr-2" size={18} />
                   <p>Created</p>
-                  <p className="ml-auto">{new Date(listData.createdAt).toLocaleDateString()}</p>
+                  <p className="ml-auto">
+                    {new Date(listData.createdAt).toLocaleDateString()}{' '}
+                    {new Date(listData.createdAt).toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
                 </div>
                 <div className="flex items-center">
                   <LucideCalendarSync className="mr-2" size={18} />
@@ -536,7 +543,11 @@ export default function ListDetailPage() {
                     </HoverCardTrigger>
                     <HoverCardContent className="flex w-fit items-center justify-center">
                       <p className="mx-auto font-semibold">
-                        {new Date(listData.updatedAt).toLocaleDateString()}
+                        {new Date(listData.updatedAt).toLocaleDateString()}{' '}
+                        {new Date(listData.updatedAt).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </p>
                     </HoverCardContent>
                   </HoverCard>

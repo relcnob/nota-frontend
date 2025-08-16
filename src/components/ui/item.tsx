@@ -3,7 +3,7 @@ import { Item } from '@/util/types/item';
 import { Checkbox } from './checkbox';
 import React, { useState } from 'react';
 import { Badge } from './badge';
-import { Trash } from 'lucide-react';
+import { Pen, Trash } from 'lucide-react';
 import { Button } from './button';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 type Props = {
@@ -90,6 +90,7 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
           <div className="text-xs text-gray-500">{formatRelativeDate(item.createdAt)}</div>
         )}
       </div>
+
       <div className="col-span-8 ml-4 flex-1">
         {isEditingNotes ? (
           <input
@@ -100,6 +101,28 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
             onBlur={handleNotesSubmit}
             onKeyDown={(e) => e.key === 'Enter' && handleNotesSubmit()}
           />
+        ) : notes.length > 76 ? (
+          <Popover>
+            <PopoverTrigger asChild>
+              <div className={`font-medium} max-w-full cursor-pointer px-2 text-xs font-medium`}>
+                {`${item.notes?.slice(0, 76)} ...`}
+              </div>
+            </PopoverTrigger>
+            <PopoverContent>
+              <h3 className="text-sm font-semibold">Notes</h3>
+              <div className="max-w-xs p-2 text-sm">{item.notes}</div>
+              <div className="align-center flex w-full flex-row justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditingNotes(true)}
+                  className="cursor-pointer"
+                >
+                  <Pen size={16} /> Edit
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
         ) : (
           <div
             className={`max-w-full cursor-pointer px-2 text-xs font-medium ${!item.notes ? 'text-gray-400' : ''}`}

@@ -90,10 +90,8 @@ export default function ListsPage() {
   useEffect(() => {
     if (listData && page > 1) {
       setLists((prev) => [...prev, ...listData.lists]);
-      console.log(listData.meta);
     } else if (listData && page === 1) {
       setLists(listData.lists);
-      console.log(listData.meta);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listData?.lists, page]);
@@ -164,13 +162,15 @@ export default function ListsPage() {
 
           <div className="mb-4 grid w-full grid-cols-12 px-4 text-sm font-semibold text-gray-500">
             <p className="col-span-3">Title</p>
-            <p className="col-span-3">Description</p>
+            <p className="col-span-2">Description</p>
             <p className="col-span-2 w-full text-center">Tasks</p>
+            <p className="col-span-1 w-full text-center">Owner</p>
             <p className="col-span-2 w-full text-center">Collaborators</p>
+            <p className="col-span-2 w-full text-center"></p>
           </div>
         </div>
       )}
-      <div className="mb-6 grid grid-cols-1 gap-4">
+      <div className="border-box mb-6 grid grid-cols-1 gap-4">
         {isLoadingLists && !listData && (
           <>
             <Skeleton className="h-[60px] w-full rounded-md" />
@@ -188,7 +188,7 @@ export default function ListsPage() {
             {listData && page !== listData.meta.totalPages && (
               <Button
                 variant="outline"
-                className="mt-4 w-full"
+                className="mt-4 w-full cursor-pointer"
                 onClick={() => setPage((prev) => prev + 1)}
               >
                 Load more

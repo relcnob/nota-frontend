@@ -43,7 +43,7 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
             <h2 className="text-lg font-semibold text-gray-700">{shortTitle}</h2>
           )}
         </div>
-        <div className="col-span-3 flex flex-row items-center gap-4">
+        <div className="col-span-2 flex flex-row items-center gap-4">
           {isLongDescription ? (
             <Popover>
               <PopoverTrigger asChild>
@@ -71,7 +71,7 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
             </Badge>
           )}
         </div>
-        <div className="col-span-2 flex w-full items-center justify-center -space-x-2">
+        <div className="col-span-1 flex w-full items-center justify-center">
           {list.owner && (
             <HoverCard>
               <HoverCardTrigger asChild>
@@ -92,6 +92,8 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
               </HoverCardContent>
             </HoverCard>
           )}
+        </div>
+        <div className="col-span-2 flex w-full items-center justify-center -space-x-2">
           {list.collaborators?.map((collab) => (
             <HoverCard key={collab.id}>
               <HoverCardTrigger asChild>
