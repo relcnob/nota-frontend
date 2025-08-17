@@ -22,7 +22,7 @@ import { Separator } from '@/components/ui/separator';
 import { formatRelativeDate } from '@/util/helpers/formatRelativeDate';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { useAuth } from '@/context/auth-context';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { List } from '@/util/types/list';
 import {
   DropdownMenu,
@@ -309,7 +309,7 @@ export default function ListDetailPage() {
                               onClick={() => (isEditor || isOwner) && setIsEditingTitle(true)}
                             >
                               <h1
-                                className={`${listData.title.length > 0 ? '' : 'text-gray-500'} max-w-[20rem] overflow-hidden text-2xl font-semibold text-ellipsis whitespace-nowrap`}
+                                className={`${listData.title.length > 0 ? '' : 'text-muted-foreground'} max-w-[20rem] overflow-hidden text-2xl font-semibold text-ellipsis whitespace-nowrap`}
                               >
                                 {listData.title.length > 0 ? listData.title : 'Untitled'}
                               </h1>
@@ -424,7 +424,9 @@ export default function ListDetailPage() {
                       />
                     ))}
                 {listData.items.length === 0 && itemsToBeAdded.length === 0 && (
-                  <p className="text-gray-500">No items in this list.</p>
+                  <p className="text-muted-foreground w-full py-8 text-center">
+                    No items in this list.
+                  </p>
                 )}
                 <div className="my-6 flex justify-center">
                   <Button
@@ -478,7 +480,7 @@ export default function ListDetailPage() {
                   />
                 ) : (
                   <div className="flex w-full flex-col">
-                    <p className="mb-0 text-sm text-gray-500">
+                    <p className="text-muted-foreground mb-0 text-sm">
                       {listData.description
                         ? isDescriptionExpanded
                           ? listData.description
@@ -561,11 +563,11 @@ export default function ListDetailPage() {
                         className="group flex items-center gap-2"
                         href={`/dashboard/lists/${id}/collaborators`}
                       >
-                        <p className="group-hover:text-primary text-sm text-gray-500 transition">
+                        <p className="group-hover:text-primary text-muted-foreground text-sm transition">
                           Edit
                         </p>
                         <Pen
-                          className="group-hover:stroke-primary inline-block stroke-gray-500 transition"
+                          className="group-hover:stroke-primary stroke-muted-foreground inline-block transition"
                           size={14}
                         />
                       </Link>

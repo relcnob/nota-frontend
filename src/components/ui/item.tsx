@@ -60,7 +60,7 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
   };
 
   return (
-    <div className="grid w-full grid-cols-24 items-center rounded-sm border py-2 pr-2 pl-4 hover:bg-gray-50">
+    <div className="dark:hover:bg-secondary grid w-full grid-cols-24 items-center rounded-sm border py-2 pr-2 pl-4 hover:bg-gray-50">
       <Checkbox
         className="col-span-1 h-6 w-6 cursor-pointer justify-self-center"
         checked={item.completed}
@@ -80,14 +80,14 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
           />
         ) : (
           <div
-            className={`max-w-xs cursor-pointer font-medium ${!item.name ? 'text-gray-400' : ''}`}
+            className={`max-w-xs cursor-pointer font-medium ${!item.name ? 'text-muted-foreground' : ''}`}
             onClick={() => setIsEditingName(true)}
           >
             {item.name || 'Untitled'}
           </div>
         )}
         {item.createdAt && (
-          <div className="text-xs text-gray-500">{formatRelativeDate(item.createdAt)}</div>
+          <div className="text-muted-foreground text-xs">{formatRelativeDate(item.createdAt)}</div>
         )}
       </div>
 
@@ -125,7 +125,7 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
           </Popover>
         ) : (
           <div
-            className={`max-w-full cursor-pointer px-2 text-xs font-medium ${!item.notes ? 'text-gray-400' : ''}`}
+            className={`max-w-full cursor-pointer px-2 text-xs font-medium ${!item.notes ? 'text-muted-foreground' : ''}`}
             onClick={() => setIsEditingNotes(true)}
           >
             {item.notes || 'No notes'}
@@ -152,7 +152,7 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
           </Badge>
         )}
       </div>
-      <div className="col-span-3 mx-6 text-sm text-gray-500">
+      <div className="text-muted-foreground col-span-3 mx-6 text-sm">
         {isEditingQty ? (
           <input
             autoFocus
@@ -177,14 +177,14 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
             className="group col-span-2 cursor-pointer justify-self-end p-1"
           >
             <Trash
-              className="group-hover:stroke-destructive stroke-gray-500 transition"
+              className="group-hover:stroke-destructive stroke-muted-foreground transition"
               size={20}
             />
           </Button>
         </PopoverTrigger>
         <PopoverContent>
           <div>
-            <p className="mb-4 justify-center text-center text-sm text-gray-500">
+            <p className="text-muted-foreground mb-4 justify-center text-center text-sm">
               Are you sure you want to delete this list?
             </p>
             <div className="grid grid-cols-2 gap-6">

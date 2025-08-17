@@ -8,6 +8,7 @@ import { AuthProvider } from '@/context/auth-context';
 import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Toaster } from '@/components/ui/sonner';
+import { ModeToggle } from '@/components/ui/themeToggle';
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -17,16 +18,19 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <Toaster />
       <SidebarProvider>
         <AppSidebar />
-        <main className="flex h-screen w-full flex-col">
-          <section className="bg-background flex w-full items-center justify-start gap-6 px-4 py-4">
+        <main className="flex h-screen w-full flex-col overflow-hidden">
+          <section className="bg-background flex h-[64px] w-full items-center justify-start gap-6 p-4 pr-8">
             <SidebarTrigger className="cursor-pointer" />
             {loading ? (
               <Skeleton className="h-[24px] w-[140px] rounded-full" />
             ) : (
               <h2 className="text-lg font-semibold">{`Hi ${user?.username} `}</h2>
             )}
+            <div className="ml-auto">
+              <ModeToggle />
+            </div>
           </section>
-          <section className="bg-background mx-auto w-full max-w-screen-xl px-4">
+          <section className="bg-background mx-auto h-[calc(100vh-64px)] w-full flex-grow px-4">
             {children}
           </section>
         </main>

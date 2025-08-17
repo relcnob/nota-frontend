@@ -14,7 +14,7 @@ import ListItem from '@/components/ui/list-item';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/context/auth-context';
 import { useLists } from '@/util/hooks/useLists';
-import { CheckCircle2, Plus, TriangleAlert } from 'lucide-react';
+import { CheckCircle2, CircleXIcon, Plus, TriangleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useCreateList, useDeleteList } from '@/util/hooks/useList';
@@ -22,6 +22,7 @@ import { useCreateList, useDeleteList } from '@/util/hooks/useList';
 export default function ListsPage() {
   const { user } = useAuth();
   const [page, setPage] = useState(1);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [pageSize, setPageSize] = useState(10);
   const { data: listData, isLoading: isLoadingLists, isError, refetch } = useLists(page, pageSize);
   const [lists, setLists] = useState(listData?.lists ?? []);
@@ -31,8 +32,16 @@ export default function ListsPage() {
   const [listTitle, setListTitle] = useState('');
   const [listDescription, setListDescription] = useState('');
 
-  const { mutate: createList, isSuccess: isListCreated } = useCreateList();
-  const { mutate: deleteList, isSuccess: isListDeleted } = useDeleteList();
+  const {
+    mutate: createList,
+    isSuccess: isListCreated,
+    isError: isListCreationError,
+  } = useCreateList();
+  const {
+    mutate: deleteList,
+    isSuccess: isListDeleted,
+    isError: isListDeletionError,
+  } = useDeleteList();
 
   const handleDialogClose = () => {
     setIsDialogOpen(false);
@@ -81,6 +90,39 @@ export default function ListsPage() {
     }
   }, [isListDeleted]);
 
+  useEffect(() => {
+    if (isError) {
+      toast('An error occurred while deleting the list', {
+        id: 'list-deletion-error',
+        position: 'top-center',
+        dismissible: true,
+        icon: <CircleXIcon size={16} />,
+      });
+    }
+  }, [isError]);
+
+  useEffect(() => {
+    if (isListCreationError) {
+      toast('An error occurred while creating the list', {
+        id: 'list-creation-error',
+        position: 'top-center',
+        dismissible: true,
+        icon: <CircleXIcon size={16} />,
+      });
+    }
+  }, [isListCreationError]);
+
+  useEffect(() => {
+    if (isListDeletionError) {
+      toast('An error occurred while deleting the list', {
+        id: 'list-deletion-error',
+        position: 'top-center',
+        dismissible: true,
+        icon: <CircleXIcon size={16} />,
+      });
+    }
+  }, [isListDeletionError]);
+
   const handleDelete = async (listId: string) => {
     if (!user || !listId) return;
     console.log('Deleting list with ID:', listId);
@@ -97,7 +139,7 @@ export default function ListsPage() {
   }, [listData?.lists, page]);
 
   return (
-    <div className="w-full pt-4">
+    <div className="flex h-full w-full flex-col pt-4">
       {isLoadingLists && !listData ? (
         <div className="mb-4 flex w-full flex-col items-center justify-center gap-4">
           <div className="mb-4 flex w-full flex-row items-center justify-between">
@@ -108,7 +150,7 @@ export default function ListsPage() {
         </div>
       ) : (
         <div className="flex w-full flex-col gap-4">
-          <div className="mb-4 flex w-full flex-row items-center justify-between">
+          <div className="mb-4 flex w-full flex-row items-center justify-between pr-4">
             <h1 className="text-3xl font-semibold">{`Your Lists (${lists.length})`}</h1>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
@@ -124,13 +166,13 @@ export default function ListsPage() {
                   </DialogDescription>
                 </DialogHeader>
                 <section className="flex flex-col gap-2">
-                  <h2 className="m-0 text-sm font-semibold text-gray-500">Title</h2>
+                  <h2 className="text-muted-foreground m-0 text-sm font-semibold">Title</h2>
                   <Input
                     placeholder="fx. Groceries"
                     value={listTitle}
                     onChange={(e) => setListTitle(e.target.value)}
                   />
-                  <h2 className="m-0 text-sm font-semibold text-gray-500">{`Description (optional)`}</h2>
+                  <h2 className="text-muted-foreground m-0 text-sm font-semibold">{`Description (optional)`}</h2>
                   <Input
                     type="text"
                     placeholder="Briefly describe your list"
@@ -159,8 +201,7 @@ export default function ListsPage() {
               </DialogContent>
             </Dialog>
           </div>
-
-          <div className="mb-4 grid w-full grid-cols-12 px-4 text-sm font-semibold text-gray-500">
+          <div className="text-muted-foreground mb-2 grid w-full grid-cols-12 pr-12 pl-4 text-sm font-semibold">
             <p className="col-span-3">Title</p>
             <p className="col-span-2">Description</p>
             <p className="col-span-2 w-full text-center">Tasks</p>
@@ -170,7 +211,7 @@ export default function ListsPage() {
           </div>
         </div>
       )}
-      <div className="border-box mb-6 grid grid-cols-1 gap-4">
+      <div className="scrollbar-thin scrollbar-thumb-rounded-md scrollbar-track-rounded-md scrollbar-thumb-gray-300 grid flex-grow grid-cols-1 gap-4 overflow-y-auto pt-2 pr-4 pb-4">
         {isLoadingLists && !listData && (
           <>
             <Skeleton className="h-[60px] w-full rounded-md" />
@@ -187,21 +228,21 @@ export default function ListsPage() {
             ))}
             {listData && page !== listData.meta.totalPages && (
               <Button
-                variant="outline"
-                className="mt-4 w-full cursor-pointer"
+                variant="default"
+                className="mx-auto mt-4 w-fit cursor-pointer px-8"
                 onClick={() => setPage((prev) => prev + 1)}
               >
-                Load more
+                Load more lists
               </Button>
             )}
           </>
         )}
         {!isLoadingLists && lists && lists.length === 0 && (
           <div className="mb-6 grid grid-cols-1 items-center gap-2">
-            <h2 className="width-full text-center text-lg font-semibold text-gray-500">
+            <h2 className="width-full text-muted-foreground text-center text-lg font-semibold">
               No lists found.
             </h2>
-            <p className="width-full text-center text-gray-500">
+            <p className="width-full text-muted-foreground text-center">
               Try creating a new list or adjust the filters.
             </p>
           </div>

@@ -20,7 +20,7 @@ function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="border-b px-4 py-2">
         <h2 className="text-lg font-semibold">Nota</h2>
-        <p className="text-sm text-gray-500">Welcome to your dashboard</p>
+        <p className="text-muted-foreground text-sm">Welcome to your dashboard</p>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>

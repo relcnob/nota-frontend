@@ -29,36 +29,36 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
           {isLongTitle ? (
             <Popover>
               <PopoverTrigger asChild>
-                <h2 className="hover:text-primary text max-w-[16rem] cursor-pointer text-lg font-semibold text-gray-700">
+                <h2 className="hover:text-primary text text-primary max-w-[16rem] cursor-pointer text-lg font-semibold">
                   {shortTitle}
                 </h2>
               </PopoverTrigger>
               <PopoverContent>
                 <div className="flex flex-col">
-                  <h2 className="text-lg font-semibold text-gray-700">{list.title}</h2>
+                  <h2 className="text-primary text-lg font-semibold">{list.title}</h2>
                 </div>
               </PopoverContent>
             </Popover>
           ) : (
-            <h2 className="text-lg font-semibold text-gray-700">{shortTitle}</h2>
+            <h2 className="text-primary text-lg font-semibold">{shortTitle}</h2>
           )}
         </div>
         <div className="col-span-2 flex flex-row items-center gap-4">
           {isLongDescription ? (
             <Popover>
               <PopoverTrigger asChild>
-                <p className="hover:text-primary cursor-pointer text-sm text-gray-500">
+                <p className="hover:text-primary text-muted-foreground cursor-pointer text-sm">
                   {shortDescription}
                 </p>
               </PopoverTrigger>
               <PopoverContent>
                 <div className="flex flex-col px-2 py-1">
-                  <p className="text-sm text-gray-500">{list.description}</p>
+                  <p className="text-muted-foreground text-sm">{list.description}</p>
                 </div>
               </PopoverContent>
             </Popover>
           ) : (
-            <p className="text-sm text-gray-500">{shortDescription}</p>
+            <p className="text-muted-foreground text-sm">{shortDescription}</p>
           )}
         </div>
         <div className="col-span-2 flex h-8 w-24 w-full flex-row items-center justify-center gap-2">
@@ -84,9 +84,9 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
               <HoverCardContent asChild>
                 <div className="flex w-fit flex-col items-center gap-1">
                   <p className="text-sm font-semibold">{list.owner.username}</p>
-                  <p className="text-xs text-gray-500">{list.owner.email}</p>
+                  <p className="text-muted-foreground text-xs">{list.owner.email}</p>
                   <Badge variant="outline" className="mt-2 w-full">
-                    <p className="text-xs text-gray-500">Owner</p>
+                    <p className="text-muted-foreground text-xs">Owner</p>
                   </Badge>
                 </div>
               </HoverCardContent>
@@ -106,9 +106,9 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
               <HoverCardContent asChild>
                 <div className="flex w-fit flex-col items-center gap-1">
                   <p className="text-sm font-semibold">{collab.user.username}</p>
-                  <p className="text-xs text-gray-500">{collab.user.email}</p>
+                  <p className="text-muted-foreground text-xs">{collab.user.email}</p>
                   <Badge variant="outline" className="mt-2 w-full">
-                    <p className="text-xs text-gray-500">{collab.role}</p>
+                    <p className="text-muted-foreground text-xs">{collab.role}</p>
                   </Badge>
                 </div>
               </HoverCardContent>
@@ -119,7 +119,7 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="icon" className="group cursor-pointer p-1">
-                <Calendar className="group-hover:stroke-primary stroke-gray-500 transition" />
+                <Calendar className="group-hover:stroke-primary stroke-muted-foreground transition" />
               </Button>
             </PopoverTrigger>
             <PopoverContent asChild>
@@ -149,7 +149,10 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
           </Popover>
           <Button asChild variant="outline" size="icon" className="cursor-pointer p-1">
             <Link href={`/dashboard/lists/${list.id}`} className="group">
-              <Pencil size={20} className="group-hover:stroke-primary stroke-gray-500 transition" />
+              <Pencil
+                size={20}
+                className="group-hover:stroke-primary stroke-muted-foreground transition"
+              />
             </Link>
           </Button>
           <Popover open={isDeleteOpen} onOpenChange={setDeleteOpen}>
@@ -157,13 +160,13 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
               <Button variant="outline" size="icon" className="group cursor-pointer p-1">
                 <Trash
                   size={20}
-                  className="group-hover:stroke-destructive stroke-gray-500 transition"
+                  className="group-hover:stroke-destructive stroke-muted-foreground transition"
                 />
               </Button>
             </PopoverTrigger>
             <PopoverContent>
               <div>
-                <p className="mb-4 justify-center text-center text-sm text-gray-500">
+                <p className="text-muted-foreground mb-4 justify-center text-center text-sm">
                   Are you sure you want to delete this list?
                 </p>
                 <div className="grid grid-cols-2 gap-2">
