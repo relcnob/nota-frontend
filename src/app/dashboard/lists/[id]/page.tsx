@@ -6,6 +6,7 @@ import {
   ArrowUpDown,
   Calendar,
   CheckCircle2,
+  CheckIcon,
   ChevronDown,
   ChevronLeft,
   CircleCheck,
@@ -17,6 +18,8 @@ import {
   Plus,
   RefreshCcw,
   TriangleAlert,
+  XCircle,
+  XIcon,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { formatRelativeDate } from '@/util/helpers/formatRelativeDate';
@@ -28,6 +31,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -45,6 +50,13 @@ import { Item } from '@/util/types/item';
 import Link from 'next/link';
 import { useBulkItems } from '@/util/hooks/useBulkItems';
 import { toast } from 'sonner';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 
 const SortOptions = [
   { label: 'Name (A-Z)', value: 'name_asc' },
@@ -73,6 +85,7 @@ export default function ListDetailPage() {
   const [description, setDescription] = useState('');
   const [itemsToBeRemoved, setItemsToBeRemoved] = useState<string[]>([]);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [isCollaboratorSheetOpen, setIsCollaboratorSheetOpen] = useState(false);
 
   const params = useParams();
   const id = params?.id as string;
@@ -273,6 +286,27 @@ export default function ListDetailPage() {
     isListMutationSuccess,
   ]);
 
+  useEffect(() => {
+    if (
+      bulkCreateItems.isError ||
+      bulkUpdateItems.isError ||
+      bulkRemoveItems.isError ||
+      isListMutationError
+    ) {
+      toast('Error saving changes', {
+        id: 'bulk-save-error',
+        position: 'top-center',
+        dismissible: true,
+        icon: <XCircle size={16} />,
+      });
+    }
+  }, [
+    bulkCreateItems.isError,
+    bulkUpdateItems.isError,
+    bulkRemoveItems.isError,
+    isListMutationError,
+  ]);
+
   return (
     <div className={'w-full'}>
       {isLoading && !listData ? (
@@ -449,18 +483,19 @@ export default function ListDetailPage() {
               ) : (
                 <div className="block h-[36px] w-full"></div>
               )}
-              <div className="group flex flex-col">
+              <div className="flex flex-col">
                 <div className="mt-6 mb-2 flex items-center justify-between">
                   <h2 className="text-xl font-semibold">About</h2>
                   {isOwner || isEditor ? (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="cursor-pointer opacity-0 transition-opacity group-hover:opacity-100"
+                      className="flex cursor-pointer flex-row items-center gap-2"
                       disabled={isEditingDescription}
                       onClick={() => setIsEditingDescription(true)}
                     >
-                      <Pen size={16} /> Edit
+                      <p className="text-primary text-sm">Edit</p>
+                      <Pen className="stroke-primary inline-block transition" size={14} />
                     </Button>
                   ) : (
                     <></>
@@ -556,21 +591,18 @@ export default function ListDetailPage() {
                 </div>
                 <Separator className="my-2" />
                 <div>
-                  <div className="flex items-center justify-between">
+                  <div className="group flex items-center justify-between">
                     <h2 className="text-xl font-semibold">Collaborators</h2>
                     {isOwner && (
-                      <Link
-                        className="group flex items-center gap-2"
-                        href={`/dashboard/lists/${id}/collaborators`}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="group flex cursor-pointer items-center gap-2"
+                        onClick={() => setIsCollaboratorSheetOpen(true)}
                       >
-                        <p className="group-hover:text-primary text-muted-foreground text-sm transition">
-                          Edit
-                        </p>
-                        <Pen
-                          className="group-hover:stroke-primary stroke-muted-foreground inline-block transition"
-                          size={14}
-                        />
-                      </Link>
+                        <p className="text-primary text-sm">Edit</p>
+                        <Pen className="stroke-primary inline-block transition" size={14} />
+                      </Button>
                     )}
                   </div>
                   <div className="mt-2 max-h-[250px] overflow-y-auto">
@@ -595,6 +627,70 @@ export default function ListDetailPage() {
               </div>
             </div>
           </section>
+          <Sheet open={isCollaboratorSheetOpen} onOpenChange={setIsCollaboratorSheetOpen}>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle className="mb-6">Collaborators</SheetTitle>
+                <SheetDescription className="w-full">
+                  {listData.collaborators.length > 0 ? (
+                    <section className="flex flex-col gap-4">
+                      {listData.collaborators.map((collab) => (
+                        <div
+                          key={collab.id}
+                          className="border-muted flex grid w-full grid-cols-6 items-center gap-6 rounded-md border py-2 pr-1 pl-4"
+                        >
+                          <div className="col-span-3 flex flex-col gap-1">
+                            <p className="text-primary font-semibold">{collab.user.username}</p>
+                            <p className="text-muted-foreground text-xs">{collab.user.email}</p>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                className="col-span-2 cursor-pointer capitalize"
+                                variant="ghost"
+                                size="sm"
+                              >
+                                {collab.role} <ChevronDown className="inline-block" size={12} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuLabel>Change role</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className={`${collab.role === 'viewer' ? 'font-semibold' : ''} cursor-pointer`}
+                              >
+                                Viewer
+                                {collab.role === 'viewer' && (
+                                  <CheckIcon className="ml-auto inline-block" size={10} />
+                                )}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className={`${collab.role === 'editor' ? 'font-semibold' : ''} cursor-pointer`}
+                              >
+                                Editor
+                                {collab.role === 'editor' && (
+                                  <CheckIcon className="ml-auto inline-block" size={10} />
+                                )}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="group col-span-1 h-[32px] w-[32px] cursor-pointer"
+                          >
+                            <XIcon size={14} className="group-hover:stroke-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                    </section>
+                  ) : (
+                    <p className="mx-auto w-full text-center">No collaborators found.</p>
+                  )}
+                </SheetDescription>
+              </SheetHeader>
+            </SheetContent>
+          </Sheet>
         </>
       )}
     </div>

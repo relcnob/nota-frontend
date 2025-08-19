@@ -211,7 +211,7 @@ export default function ListsPage() {
           </div>
         </div>
       )}
-      <div className="scrollbar-thin scrollbar-thumb-rounded-md scrollbar-track-rounded-md scrollbar-thumb-gray-300 grid flex-grow grid-cols-1 gap-4 overflow-y-auto pt-2 pr-4 pb-4">
+      <div className="scrollbar-thin scrollbar-thumb-rounded-md scrollbar-track-rounded-md scrollbar-thumb-gray-300 grid grid-cols-1 items-start gap-4 overflow-y-auto pt-2 pr-4 pb-4">
         {isLoadingLists && !listData && (
           <>
             <Skeleton className="h-[60px] w-full rounded-md" />

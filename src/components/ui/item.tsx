@@ -60,7 +60,7 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
   };
 
   return (
-    <div className="dark:hover:bg-secondary grid w-full grid-cols-24 items-center rounded-sm border py-2 pr-2 pl-4 hover:bg-gray-50">
+    <div className="dark:hover:bg-secondary grid h-fit w-full grid-cols-24 items-center rounded-sm border py-2 pr-2 pl-4 hover:bg-gray-50">
       <Checkbox
         className="col-span-1 h-6 w-6 cursor-pointer justify-self-center"
         checked={item.completed}
