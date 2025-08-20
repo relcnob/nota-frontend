@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useList, useUpdateList } from '@/util/hooks/useList';
+import { useAddListCollaborator, useList, useUpdateList } from '@/util/hooks/useList';
 import {
   ArrowUpDown,
   Calendar,
@@ -50,13 +50,9 @@ import { Item } from '@/util/types/item';
 import Link from 'next/link';
 import { useBulkItems } from '@/util/hooks/useBulkItems';
 import { toast } from 'sonner';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
+import { validateEmail } from '@/util/helpers/validators';
 
 const SortOptions = [
   { label: 'Name (A-Z)', value: 'name_asc' },
@@ -86,6 +82,9 @@ export default function ListDetailPage() {
   const [itemsToBeRemoved, setItemsToBeRemoved] = useState<string[]>([]);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [isCollaboratorSheetOpen, setIsCollaboratorSheetOpen] = useState(false);
+  const [collaboratorEmail, setCollaboratorEmail] = useState<string>('');
+  const [collaboratorRole, setCollaboratorRole] = useState<'viewer' | 'editor'>('viewer');
+  const [collaboratorAddError, setCollaboratorAddError] = useState<string>('');
 
   const params = useParams();
   const id = params?.id as string;
@@ -96,8 +95,17 @@ export default function ListDetailPage() {
     isError: isListMutationError,
     isSuccess: isListMutationSuccess,
   } = useUpdateList();
+
+  const {
+    mutate: addCollaborator,
+    isPending: isAddingCollaborator,
+    isError: isAddCollaboratorError,
+    isSuccess: isAddCollaboratorSuccess,
+  } = useAddListCollaborator();
+
   const { data, isLoading, isError, refetch } = useList(id);
   const { bulkUpdateItems, bulkCreateItems, bulkRemoveItems } = useBulkItems();
+
   useEffect(() => {
     if (data && !isLoading) {
       setListData(data.data);
@@ -192,6 +200,15 @@ export default function ListDetailPage() {
       addedById: auth.user?.id || '',
     };
     setItemsToBeAdded((prev) => [...prev, newItem]);
+  };
+
+  const createNewCollaborator = () => {
+    const collaboratorPayload = {
+      email: collaboratorEmail,
+      role: collaboratorRole,
+      listId: listData?.id || '',
+    };
+    addCollaborator(collaboratorPayload);
   };
 
   const setHandlers = {
@@ -306,6 +323,32 @@ export default function ListDetailPage() {
     bulkRemoveItems.isError,
     isListMutationError,
   ]);
+
+  useEffect(() => {
+    if (isAddCollaboratorSuccess) {
+      toast('Collaborator added successfully!', {
+        id: 'collaborator-add',
+        position: 'top-center',
+        dismissible: true,
+        icon: <CheckCircle2 size={16} />,
+      });
+    }
+    setCollaboratorEmail('');
+    setCollaboratorRole('viewer');
+    refetch();
+  }, [isAddCollaboratorSuccess]);
+
+  useEffect(() => {
+    if (isAddCollaboratorError) {
+      toast('Error adding collaborator', {
+        id: 'collaborator-add-error',
+        position: 'top-center',
+        dismissible: true,
+        icon: <XCircle size={16} />,
+      });
+      setCollaboratorAddError('Invalid email address');
+    }
+  }, [isAddCollaboratorError]);
 
   return (
     <div className={'w-full'}>
@@ -631,64 +674,138 @@ export default function ListDetailPage() {
             <SheetContent>
               <SheetHeader>
                 <SheetTitle className="mb-6">Collaborators</SheetTitle>
-                <SheetDescription className="w-full">
-                  {listData.collaborators.length > 0 ? (
-                    <section className="flex flex-col gap-4">
-                      {listData.collaborators.map((collab) => (
-                        <div
-                          key={collab.id}
-                          className="border-muted flex grid w-full grid-cols-6 items-center gap-6 rounded-md border py-2 pr-1 pl-4"
-                        >
-                          <div className="col-span-3 flex flex-col gap-1">
-                            <p className="text-primary font-semibold">{collab.user.username}</p>
-                            <p className="text-muted-foreground text-xs">{collab.user.email}</p>
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                className="col-span-2 cursor-pointer capitalize"
-                                variant="ghost"
-                                size="sm"
-                              >
-                                {collab.role} <ChevronDown className="inline-block" size={12} />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuLabel>Change role</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className={`${collab.role === 'viewer' ? 'font-semibold' : ''} cursor-pointer`}
-                              >
-                                Viewer
-                                {collab.role === 'viewer' && (
-                                  <CheckIcon className="ml-auto inline-block" size={10} />
-                                )}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className={`${collab.role === 'editor' ? 'font-semibold' : ''} cursor-pointer`}
-                              >
-                                Editor
-                                {collab.role === 'editor' && (
-                                  <CheckIcon className="ml-auto inline-block" size={10} />
-                                )}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="group col-span-1 h-[32px] w-[32px] cursor-pointer"
-                          >
-                            <XIcon size={14} className="group-hover:stroke-destructive" />
-                          </Button>
-                        </div>
-                      ))}
-                    </section>
-                  ) : (
-                    <p className="mx-auto w-full text-center">No collaborators found.</p>
-                  )}
-                </SheetDescription>
               </SheetHeader>
+              <section className="flex h-full w-full flex-grow flex-col p-4">
+                {listData.collaborators.length > 0 ? (
+                  <section className="flex flex-grow flex-col gap-4 overflow-y-auto">
+                    {listData.collaborators.map((collab) => (
+                      <div
+                        key={collab.id}
+                        className="border-muted flex grid w-full grid-cols-6 items-center gap-6 rounded-md border py-2 pr-1 pl-4"
+                      >
+                        <div className="col-span-3 flex flex-col gap-1">
+                          <p className="text-primary font-semibold">{collab.user.username}</p>
+                          <p className="text-muted-foreground text-xs">{collab.user.email}</p>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              className="col-span-2 cursor-pointer capitalize"
+                              variant="ghost"
+                              size="sm"
+                            >
+                              {collab.role} <ChevronDown className="inline-block" size={12} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuLabel>Change role</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className={`${collab.role === 'viewer' ? 'font-semibold' : ''} cursor-pointer`}
+                            >
+                              Viewer
+                              {collab.role === 'viewer' && (
+                                <CheckIcon className="ml-auto inline-block" size={10} />
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className={`${collab.role === 'editor' ? 'font-semibold' : ''} cursor-pointer`}
+                            >
+                              Editor
+                              {collab.role === 'editor' && (
+                                <CheckIcon className="ml-auto inline-block" size={10} />
+                              )}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="group col-span-1 h-[32px] w-[32px] cursor-pointer"
+                        >
+                          <XIcon size={14} className="group-hover:stroke-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </section>
+                ) : (
+                  <p className="mx-auto w-full text-center">No collaborators found.</p>
+                )}
+                <Separator className="my-4" />
+                <div className="align-self-end mt-auto mb-0 flex flex-col items-center gap-4">
+                  {collaboratorAddError && (
+                    <div className="flex w-full flex-row items-center justify-center gap-2">
+                      <TriangleAlert size={12} className="stroke-destructive inline-block" />
+                      <p className="text-destructive font-sm">{collaboratorAddError}</p>
+                    </div>
+                  )}
+                  <div className="grid w-full grid-cols-6 gap-2">
+                    <Input
+                      placeholder="user@email.com"
+                      value={collaboratorEmail}
+                      onChange={(e) => setCollaboratorEmail(e.target.value)}
+                      onBlur={() => {
+                        if (!validateEmail(collaboratorEmail)) {
+                          setCollaboratorAddError('Invalid email address');
+                        } else {
+                          setCollaboratorAddError('');
+                        }
+                      }}
+                      className="col-span-4"
+                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          className="col-span-2 cursor-pointer capitalize"
+                          variant="ghost"
+                          size="sm"
+                        >
+                          {collaboratorRole} <ChevronDown className="inline-block" size={12} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuLabel>Change role</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => setCollaboratorRole('viewer')}
+                          className={`${collaboratorRole === 'viewer' ? 'font-semibold' : ''} cursor-pointer`}
+                        >
+                          Viewer
+                          {collaboratorRole === 'viewer' && (
+                            <CheckIcon className="ml-auto inline-block" size={10} />
+                          )}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setCollaboratorRole('editor')}
+                          className={`${collaboratorRole === 'editor' ? 'font-semibold' : ''} cursor-pointer`}
+                        >
+                          Editor
+                          {collaboratorRole === 'editor' && (
+                            <CheckIcon className="ml-auto inline-block" size={10} />
+                          )}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full cursor-pointer"
+                    disabled={!validateEmail(collaboratorEmail) || isAddingCollaborator}
+                    onClick={() => {
+                      if (!validateEmail(collaboratorEmail)) {
+                        setCollaboratorAddError('Invalid email address');
+                        return;
+                      } else {
+                        setCollaboratorAddError('');
+                        createNewCollaborator();
+                      }
+                    }}
+                  >
+                    Add Collaborator
+                  </Button>
+                </div>
+              </section>
             </SheetContent>
           </Sheet>
         </>

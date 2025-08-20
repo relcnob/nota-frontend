@@ -113,8 +113,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Bulk delete failed' }, { status: res.status });
     }
 
-    const data = await res.json();
-    return NextResponse.json({ data });
+    return NextResponse.json({ msg: 'Bulk delete successful', status: 200 });
   } catch (err) {
     console.error('🔴 Server error during DELETE bulk operation:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

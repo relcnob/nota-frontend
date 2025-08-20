@@ -83,3 +83,38 @@ export function useCreateList() {
     },
   });
 }
+
+export function useAddListCollaborator() {
+  const queryClient = new QueryClient();
+  return useMutation({
+    mutationFn: async (data: { listId: string; email: string; role: 'viewer' | 'editor' }) => {
+      const res = await api.post(`/lists/${data.listId}/collaborators`, {
+        email: data.email,
+        role: data.role,
+        listId: data.listId,
+      });
+      if (res.status !== 201) {
+        throw new Error('Failed to add collaborator');
+      }
+      return res;
+    },
+    onError: (error) => {
+      console.error('Error adding collaborator:', error);
+    },
+    onSuccess: (_response, variables) => {
+      console.log('Collaborator added successfully');
+      queryClient.setQueryData(['list', variables.listId], (oldData: ListResponse | undefined) => {
+        if (!oldData) return;
+        return {
+          ...oldData,
+          data: {
+            ...oldData.data,
+            collaborators: [...oldData.data.collaborators, _response.data],
+          },
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: ['list', variables.listId] });
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
+    },
+  });
+}
