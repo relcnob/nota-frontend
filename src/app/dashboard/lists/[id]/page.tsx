@@ -1,7 +1,12 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useAddListCollaborator, useList, useUpdateList } from '@/util/hooks/useList';
+import {
+  useAddListCollaborator,
+  useList,
+  useRemoveListCollaborator,
+  useUpdateList,
+} from '@/util/hooks/useList';
 import {
   ArrowUpDown,
   Calendar,
@@ -102,6 +107,13 @@ export default function ListDetailPage() {
     isError: isAddCollaboratorError,
     isSuccess: isAddCollaboratorSuccess,
   } = useAddListCollaborator();
+
+  const {
+    mutate: removeCollaborator,
+    isPending: isRemovingCollaborator,
+    isError: isRemoveCollaboratorError,
+    isSuccess: isRemoveCollaboratorSuccess,
+  } = useRemoveListCollaborator();
 
   const { data, isLoading, isError, refetch } = useList(id);
   const { bulkUpdateItems, bulkCreateItems, bulkRemoveItems } = useBulkItems();
@@ -722,6 +734,9 @@ export default function ListDetailPage() {
                           variant="outline"
                           size="sm"
                           className="group col-span-1 h-[32px] w-[32px] cursor-pointer"
+                          onClick={() =>
+                            removeCollaborator({ listId: collab.listId, collaboratorId: collab.id })
+                          }
                         >
                           <XIcon size={14} className="group-hover:stroke-destructive" />
                         </Button>

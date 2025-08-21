@@ -118,3 +118,36 @@ export function useAddListCollaborator() {
     },
   });
 }
+
+export function useRemoveListCollaborator() {
+  const queryClient = new QueryClient();
+  return useMutation({
+    mutationFn: async (data: { listId: string; collaboratorId: string }) => {
+      const res = await api.delete(`/lists/${data.listId}/collaborators/${data.collaboratorId}`);
+      if (res.status !== 200) {
+        throw new Error('Failed to remove collaborator');
+      }
+      return res;
+    },
+    onError: (error) => {
+      console.error('Error removing collaborator:', error);
+    },
+    onSuccess: (_response, variables) => {
+      console.log('Collaborator removed successfully');
+      queryClient.setQueryData(['list', variables.listId], (oldData: ListResponse | undefined) => {
+        if (!oldData) return;
+        return {
+          ...oldData,
+          data: {
+            ...oldData.data,
+            collaborators: oldData.data.collaborators.filter(
+              (collab) => collab.id !== variables.collaboratorId,
+            ),
+          },
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: ['list', variables.listId] });
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
+    },
+  });
+}
