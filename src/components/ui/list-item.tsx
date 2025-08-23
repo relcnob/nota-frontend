@@ -24,41 +24,45 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
 
   return (
     <div className={`bg-background flex flex-row rounded-lg border px-4 py-2`}>
-      <div className="grid w-full grid-cols-12 items-center justify-between">
-        <div className="col-span-3 flex flex-row items-center gap-4">
+      <div className="grid w-full grid-cols-9 items-center justify-between lg:grid-cols-12">
+        <div className="gap-2: col-span-3 flex flex-row items-center lg:gap-4">
           {isLongTitle ? (
             <Popover>
               <PopoverTrigger asChild>
-                <h2 className="hover:text-primary text text-primary max-w-[16rem] cursor-pointer text-lg font-semibold">
+                <h2 className="hover:text-primary text-primary max-w-[16rem] cursor-pointer text-sm font-semibold md:text-base lg:text-lg">
                   {shortTitle}
                 </h2>
               </PopoverTrigger>
               <PopoverContent>
                 <div className="flex flex-col">
-                  <h2 className="text-primary text-lg font-semibold">{list.title}</h2>
+                  <h2 className="text-primary text-sm font-semibold md:text-base lg:text-lg">
+                    {list.title}
+                  </h2>
                 </div>
               </PopoverContent>
             </Popover>
           ) : (
-            <h2 className="text-primary text-lg font-semibold">{shortTitle}</h2>
+            <h2 className="text-primary text-sm font-semibold md:text-base lg:text-lg">
+              {shortTitle}
+            </h2>
           )}
         </div>
         <div className="col-span-2 flex flex-row items-center gap-4">
           {isLongDescription ? (
             <Popover>
               <PopoverTrigger asChild>
-                <p className="hover:text-primary text-muted-foreground cursor-pointer text-sm">
+                <p className="hover:text-primary text-muted-foreground cursor-pointer text-xs md:text-sm">
                   {shortDescription}
                 </p>
               </PopoverTrigger>
               <PopoverContent>
                 <div className="flex flex-col px-2 py-1">
-                  <p className="text-muted-foreground text-sm">{list.description}</p>
+                  <p className="text-muted-foreground text-xs md:text-sm">{list.description}</p>
                 </div>
               </PopoverContent>
             </Popover>
           ) : (
-            <p className="text-muted-foreground text-sm">{shortDescription}</p>
+            <p className="text-muted-foreground text-xs md:text-sm">{shortDescription}</p>
           )}
         </div>
         <div className="col-span-2 flex h-8 w-24 w-full flex-row items-center justify-center gap-2">
@@ -71,7 +75,7 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
             </Badge>
           )}
         </div>
-        <div className="col-span-1 flex w-full items-center justify-center">
+        <div className="col-span-1 hidden w-full items-center justify-center lg:flex">
           {list.owner && (
             <HoverCard>
               <HoverCardTrigger asChild>
@@ -93,7 +97,7 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
             </HoverCard>
           )}
         </div>
-        <div className="col-span-2 flex w-full items-center justify-center -space-x-2">
+        <div className="col-span-2 hidden w-full items-center justify-center -space-x-2 lg:flex">
           {list.collaborators?.map((collab) => (
             <HoverCard key={collab.id}>
               <HoverCardTrigger asChild>
@@ -115,10 +119,14 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
             </HoverCard>
           ))}
         </div>
-        <div className="col-span-2 flex flex-row items-center justify-end gap-6">
+        <div className="col-span-2 flex flex-row items-center justify-end gap-2 lg:gap-6">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="icon" className="group cursor-pointer p-1">
+              <Button
+                variant="outline"
+                size="icon"
+                className="group hidden cursor-pointer p-1 md:flex"
+              >
                 <Calendar className="group-hover:stroke-primary stroke-muted-foreground transition" />
               </Button>
             </PopoverTrigger>

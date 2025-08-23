@@ -76,6 +76,7 @@ export default function ListsPage() {
       setListDescription('');
       refetch();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isListCreated]);
 
   useEffect(() => {
@@ -88,6 +89,7 @@ export default function ListsPage() {
       });
       refetch();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isListDeleted]);
 
   useEffect(() => {
@@ -201,12 +203,12 @@ export default function ListsPage() {
               </DialogContent>
             </Dialog>
           </div>
-          <div className="text-muted-foreground mb-2 grid w-full grid-cols-12 pr-12 pl-4 text-sm font-semibold">
+          <div className="text-muted-foreground mb-2 grid w-full grid-cols-9 pr-8 pl-4 text-sm font-semibold lg:grid-cols-12">
             <p className="col-span-3">Title</p>
             <p className="col-span-2">Description</p>
             <p className="col-span-2 w-full text-center">Tasks</p>
-            <p className="col-span-1 w-full text-center">Owner</p>
-            <p className="col-span-2 w-full text-center">Collaborators</p>
+            <p className="col-span-1 hidden w-full text-center lg:flex">Owner</p>
+            <p className="col-span-2 hidden w-full text-center lg:flex">Collaborators</p>
             <p className="col-span-2 w-full text-center"></p>
           </div>
         </div>

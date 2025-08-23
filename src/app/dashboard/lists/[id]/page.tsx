@@ -19,6 +19,7 @@ import {
   CircleUserRound,
   Crown,
   Funnel,
+  LoaderCircle,
   LucideCalendarSync,
   Pen,
   Plus,
@@ -60,7 +61,6 @@ import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { validateEmail } from '@/util/helpers/validators';
-import { set } from 'zod';
 
 const SortOptions = [
   { label: 'Name (A-Z)', value: 'name_asc' },
@@ -361,6 +361,7 @@ export default function ListDetailPage() {
       setHasUnsavedChanges(false);
       refetch();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     bulkCreateItems.isSuccess,
     bulkUpdateItems.isSuccess,
@@ -401,6 +402,7 @@ export default function ListDetailPage() {
     setCollaboratorEmail('');
     setCollaboratorRole('viewer');
     refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAddCollaboratorSuccess]);
 
   useEffect(() => {
@@ -425,6 +427,7 @@ export default function ListDetailPage() {
       });
     }
     refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRemoveCollaboratorSuccess]);
 
   useEffect(() => {
@@ -437,6 +440,7 @@ export default function ListDetailPage() {
       });
     }
     refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isUpdateCollaboratorRoleSuccess]);
 
   useEffect(() => {
@@ -464,7 +468,12 @@ export default function ListDetailPage() {
   return (
     <div className={'w-full'}>
       {isLoading && !listData ? (
-        <p>Loading...</p>
+        <div className="mt-24 flex h-full w-full items-center justify-center">
+          <div className="flex flex-col items-center justify-center gap-2">
+            <LoaderCircle size={32} className="animate-spin" />
+            <p className="text-muted-foreground text-sm">Loading data...</p>
+          </div>
+        </div>
       ) : isError || !listData ? (
         <p>Error loading list</p>
       ) : null}
@@ -930,6 +939,13 @@ export default function ListDetailPage() {
                     onClick={() => {
                       if (!validateEmail(collaboratorEmail)) {
                         setCollaboratorAddError('Invalid email address');
+                        return;
+                      } else if (
+                        listData.collaborators.find(
+                          (collab) => collab.user.email === collaboratorEmail,
+                        )
+                      ) {
+                        setCollaboratorAddError('User is already a collaborator');
                         return;
                       } else {
                         setCollaboratorAddError('');
