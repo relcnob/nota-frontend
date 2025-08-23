@@ -5,6 +5,7 @@ import {
   useAddListCollaborator,
   useList,
   useRemoveListCollaborator,
+  useUpdateCollaboratorRole,
   useUpdateList,
 } from '@/util/hooks/useList';
 import {
@@ -22,9 +23,10 @@ import {
   Pen,
   Plus,
   RefreshCcw,
+  Save,
+  Trash,
   TriangleAlert,
   XCircle,
-  XIcon,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { formatRelativeDate } from '@/util/helpers/formatRelativeDate';
@@ -58,6 +60,7 @@ import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { validateEmail } from '@/util/helpers/validators';
+import { set } from 'zod';
 
 const SortOptions = [
   { label: 'Name (A-Z)', value: 'name_asc' },
@@ -90,6 +93,9 @@ export default function ListDetailPage() {
   const [collaboratorEmail, setCollaboratorEmail] = useState<string>('');
   const [collaboratorRole, setCollaboratorRole] = useState<'viewer' | 'editor'>('viewer');
   const [collaboratorAddError, setCollaboratorAddError] = useState<string>('');
+  const [collaboratorsToBeModified, setCollaboratorsToBeModified] = useState<
+    { id: string; role: 'viewer' | 'editor' }[]
+  >([]);
 
   const params = useParams();
   const id = params?.id as string;
@@ -114,6 +120,13 @@ export default function ListDetailPage() {
     isError: isRemoveCollaboratorError,
     isSuccess: isRemoveCollaboratorSuccess,
   } = useRemoveListCollaborator();
+
+  const {
+    mutate: updateCollaboratorRole,
+    isPending: isUpdatingCollaboratorRole,
+    isError: isUpdateCollaboratorRoleError,
+    isSuccess: isUpdateCollaboratorRoleSuccess,
+  } = useUpdateCollaboratorRole();
 
   const { data, isLoading, isError, refetch } = useList(id);
   const { bulkUpdateItems, bulkCreateItems, bulkRemoveItems } = useBulkItems();
@@ -292,6 +305,46 @@ export default function ListDetailPage() {
     }
   };
 
+  const handleCollaboratorRoleChange = (collaboratorId: string, newRole: 'viewer' | 'editor') => {
+    const alreadyExists = collaboratorsToBeModified.find((c) => c.id === collaboratorId);
+    const currentRole = listData?.collaborators.find((c) => c.id === collaboratorId)?.role;
+
+    if (alreadyExists) {
+      if (alreadyExists.role !== newRole && currentRole !== newRole) {
+        setCollaboratorsToBeModified((prev) =>
+          prev.map((item) => (item.id === collaboratorId ? { ...item, role: newRole } : item)),
+        );
+      }
+      if (currentRole === newRole) {
+        setCollaboratorsToBeModified((prev) => prev.filter((item) => item.id !== collaboratorId));
+      }
+    } else {
+      if (currentRole !== newRole) {
+        setCollaboratorsToBeModified((prev) => [...prev, { id: collaboratorId, role: newRole }]);
+      }
+    }
+  };
+
+  const saveUpdatedCollaboratorRole = (collaboratorId: string) => {
+    const newRole = collaboratorsToBeModified.find((c) => c.id === collaboratorId)?.role;
+    if (newRole) {
+      setCollaboratorsToBeModified((prev) => prev.filter((item) => item.id !== collaboratorId));
+      updateCollaboratorRole({
+        listId: listData?.id || '',
+        collaboratorId,
+        role: newRole,
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (collaboratorsToBeModified.length > 0) {
+      console.log(collaboratorsToBeModified);
+    } else {
+      console.log('No collaborators to be modified');
+    }
+  }, [collaboratorsToBeModified]);
+
   useEffect(() => {
     if (
       bulkCreateItems.isSuccess ||
@@ -361,6 +414,52 @@ export default function ListDetailPage() {
       setCollaboratorAddError('Invalid email address');
     }
   }, [isAddCollaboratorError]);
+
+  useEffect(() => {
+    if (isRemoveCollaboratorSuccess) {
+      toast('Collaborator removed successfully!', {
+        id: 'collaborator-remove',
+        position: 'top-center',
+        dismissible: true,
+        icon: <CheckCircle2 size={16} />,
+      });
+    }
+    refetch();
+  }, [isRemoveCollaboratorSuccess]);
+
+  useEffect(() => {
+    if (isUpdateCollaboratorRoleSuccess) {
+      toast('Collaborator role updated successfully!', {
+        id: 'collaborator-role-update',
+        position: 'top-center',
+        dismissible: true,
+        icon: <CheckCircle2 size={16} />,
+      });
+    }
+    refetch();
+  }, [isUpdateCollaboratorRoleSuccess]);
+
+  useEffect(() => {
+    if (isUpdateCollaboratorRoleError) {
+      toast('Error updating collaborator role', {
+        id: 'collaborator-role-update-error',
+        position: 'top-center',
+        dismissible: true,
+        icon: <XCircle size={16} />,
+      });
+    }
+  }, [isUpdateCollaboratorRoleError]);
+
+  useEffect(() => {
+    if (isRemoveCollaboratorError) {
+      toast('Error removing collaborator', {
+        id: 'collaborator-remove-error',
+        position: 'top-center',
+        dismissible: true,
+        icon: <XCircle size={16} />,
+      });
+    }
+  }, [isRemoveCollaboratorError]);
 
   return (
     <div className={'w-full'}>
@@ -689,30 +788,33 @@ export default function ListDetailPage() {
               </SheetHeader>
               <section className="flex h-full w-full flex-grow flex-col p-4">
                 {listData.collaborators.length > 0 ? (
-                  <section className="flex flex-grow flex-col gap-4 overflow-y-auto">
+                  <section className="flex flex-grow flex-col gap-1 overflow-y-auto">
                     {listData.collaborators.map((collab) => (
                       <div
                         key={collab.id}
-                        className="border-muted flex grid w-full grid-cols-6 items-center gap-6 rounded-md border py-2 pr-1 pl-4"
+                        className="border-muted flex grid w-full grid-cols-7 items-center gap-2 rounded-md border py-2 pr-4 pl-4"
                       >
-                        <div className="col-span-3 flex flex-col gap-1">
+                        <div className="col-span-3 flex flex-col gap-2">
                           <p className="text-primary font-semibold">{collab.user.username}</p>
                           <p className="text-muted-foreground text-xs">{collab.user.email}</p>
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
-                              className="col-span-2 cursor-pointer capitalize"
+                              className="col-span-2 cursor-pointer p-0 capitalize"
                               variant="ghost"
                               size="sm"
                             >
-                              {collab.role} <ChevronDown className="inline-block" size={12} />
+                              {collaboratorsToBeModified.find((c) => c.id === collab.id)?.role ||
+                                collab.role}
+                              <ChevronDown className="inline-block" size={12} />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent>
                             <DropdownMenuLabel>Change role</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
+                              onClick={() => handleCollaboratorRoleChange(collab.id, 'viewer')}
                               className={`${collab.role === 'viewer' ? 'font-semibold' : ''} cursor-pointer`}
                             >
                               Viewer
@@ -721,6 +823,7 @@ export default function ListDetailPage() {
                               )}
                             </DropdownMenuItem>
                             <DropdownMenuItem
+                              onClick={() => handleCollaboratorRoleChange(collab.id, 'editor')}
                               className={`${collab.role === 'editor' ? 'font-semibold' : ''} cursor-pointer`}
                             >
                               Editor
@@ -730,16 +833,33 @@ export default function ListDetailPage() {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="group col-span-1 h-[32px] w-[32px] cursor-pointer"
-                          onClick={() =>
-                            removeCollaborator({ listId: collab.listId, collaboratorId: collab.id })
-                          }
-                        >
-                          <XIcon size={14} className="group-hover:stroke-destructive" />
-                        </Button>
+                        <div className="col-span-2 flex flex-row items-center justify-end gap-2">
+                          {collaboratorsToBeModified.find((c) => c.id === collab.id) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="group h-[32px] w-[32px] cursor-pointer"
+                              onClick={() => saveUpdatedCollaboratorRole(collab.id)}
+                              disabled={isUpdatingCollaboratorRole}
+                            >
+                              <Save size={14} />
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="group h-[32px] w-[32px] cursor-pointer"
+                            onClick={() =>
+                              removeCollaborator({
+                                listId: collab.listId,
+                                collaboratorId: collab.id,
+                              })
+                            }
+                            disabled={isRemovingCollaborator}
+                          >
+                            <Trash size={14} className="group-hover:stroke-destructive" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </section>
@@ -779,7 +899,7 @@ export default function ListDetailPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <DropdownMenuLabel>Change role</DropdownMenuLabel>
+                        <DropdownMenuLabel>Select role</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => setCollaboratorRole('viewer')}

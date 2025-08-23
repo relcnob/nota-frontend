@@ -151,3 +151,42 @@ export function useRemoveListCollaborator() {
     },
   });
 }
+
+export function useUpdateCollaboratorRole() {
+  const queryClient = new QueryClient();
+  return useMutation({
+    mutationFn: async (data: {
+      listId: string;
+      collaboratorId: string;
+      role: 'viewer' | 'editor';
+    }) => {
+      const res = await api.patch(`/lists/${data.listId}/collaborators/${data.collaboratorId}`, {
+        role: data.role,
+      });
+      if (res.status !== 200) {
+        throw new Error('Failed to update collaborator role');
+      }
+      return res.data;
+    },
+    onError: (error) => {
+      console.error('Error updating collaborator role:', error);
+    },
+    onSuccess: (_response, variables) => {
+      console.log('Collaborator role updated successfully');
+      queryClient.setQueryData(['list', variables.listId], (oldData: ListResponse | undefined) => {
+        if (!oldData) return;
+        return {
+          ...oldData,
+          data: {
+            ...oldData.data,
+            collaborators: oldData.data.collaborators.map((collab) =>
+              collab.id === variables.collaboratorId ? { ...collab, role: variables.role } : collab,
+            ),
+          },
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: ['list', variables.listId] });
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
+    },
+  });
+}
