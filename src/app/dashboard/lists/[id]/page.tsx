@@ -129,7 +129,12 @@ export default function ListDetailPage() {
   } = useUpdateCollaboratorRole();
 
   const { data, isLoading, isError, refetch } = useList(id);
-  const { bulkUpdateItems, bulkCreateItems, bulkRemoveItems } = useBulkItems();
+  const {
+    bulkUpdateItems,
+    bulkCreateItems,
+    bulkRemoveItems,
+    isPending: isBulkUpdating,
+  } = useBulkItems();
 
   useEffect(() => {
     if (data && !isLoading) {
@@ -595,47 +600,55 @@ export default function ListDetailPage() {
                 </div>
               </div>
               <Separator className="my-4" />
-              <div className="space-y-4">
-                {listData.items.length > 0 &&
-                  listData.items
-                    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-                    .map((item) => (
-                      <ItemElement
-                        key={item.id}
-                        item={item}
-                        onUpdate={updateItemLocally}
-                        onDelete={() => deleteItemLocally(item.id)}
-                      />
-                    ))}
-                {itemsToBeAdded.length > 0 &&
-                  itemsToBeAdded
-                    .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
-                    .map((item, index) => (
-                      <ItemElement
-                        key={`new-${index}`}
-                        item={item}
-                        onUpdate={updateItemToBeCreatedLocally}
-                        onDelete={(id: string) => {
-                          deleteItemToBeCreatedLocally(id);
-                        }}
-                      />
-                    ))}
-                {listData.items.length === 0 && itemsToBeAdded.length === 0 && (
-                  <p className="text-muted-foreground w-full py-8 text-center">
-                    No items in this list.
-                  </p>
-                )}
-                <div className="my-6 flex justify-center">
-                  <Button
-                    variant="outline"
-                    size="default"
-                    className="cursor-pointer"
-                    onClick={createNewItem}
-                  >
-                    <Plus size={24} /> Add item
-                  </Button>
+              {isBulkUpdating ? (
+                <p className="text-muted-foreground w-full py-8 text-center">Loading...</p>
+              ) : (
+                <div className="space-y-4">
+                  {listData.items.length > 0 &&
+                    listData.items
+                      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+                      .map((item) => (
+                        <ItemElement
+                          key={item.id}
+                          item={item}
+                          onUpdate={updateItemLocally}
+                          onDelete={() => deleteItemLocally(item.id)}
+                          canEdit={isEditor || isOwner}
+                        />
+                      ))}
+                  {itemsToBeAdded.length > 0 &&
+                    itemsToBeAdded
+                      .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
+                      .map((item, index) => (
+                        <ItemElement
+                          key={`new-${index}`}
+                          item={item}
+                          onUpdate={updateItemToBeCreatedLocally}
+                          onDelete={(id: string) => {
+                            deleteItemToBeCreatedLocally(id);
+                          }}
+                          canEdit={isEditor || isOwner}
+                        />
+                      ))}
+                  {listData.items.length === 0 && itemsToBeAdded.length === 0 && (
+                    <p className="text-muted-foreground w-full py-8 text-center">
+                      No items in this list.
+                    </p>
+                  )}
+                  {(isEditor || isOwner) && (
+                    <div className="my-6 flex justify-center">
+                      <Button
+                        variant="outline"
+                        size="default"
+                        className="cursor-pointer"
+                        onClick={createNewItem}
+                      >
+                        <Plus size={24} /> Add item
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
             </div>
             <div className="border-box sticky top-0 col-span-1 flex h-[calc(100vh-60px)] flex-col overflow-y-auto p-4">
               {hasUnsavedChanges ? (
@@ -793,84 +806,93 @@ export default function ListDetailPage() {
           <Sheet open={isCollaboratorSheetOpen} onOpenChange={setIsCollaboratorSheetOpen}>
             <SheetContent>
               <SheetHeader>
-                <SheetTitle className="mb-6">Collaborators</SheetTitle>
+                <SheetTitle className="mb-1">Collaborators</SheetTitle>
               </SheetHeader>
-              <section className="flex h-full w-full flex-grow flex-col p-4">
+              <section className="flex h-full w-full flex-grow flex-col p-4 pt-0">
                 {listData.collaborators.length > 0 ? (
                   <section className="flex flex-grow flex-col gap-1 overflow-y-auto">
-                    {listData.collaborators.map((collab) => (
-                      <div
-                        key={collab.id}
-                        className="border-muted flex grid w-full grid-cols-7 items-center gap-2 rounded-md border py-2 pr-4 pl-4"
-                      >
-                        <div className="col-span-3 flex flex-col gap-2">
-                          <p className="text-primary font-semibold">{collab.user.username}</p>
-                          <p className="text-muted-foreground text-xs">{collab.user.email}</p>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              className="col-span-2 cursor-pointer p-0 capitalize"
-                              variant="ghost"
-                              size="sm"
-                            >
-                              {collaboratorsToBeModified.find((c) => c.id === collab.id)?.role ||
-                                collab.role}
-                              <ChevronDown className="inline-block" size={12} />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuLabel>Change role</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => handleCollaboratorRoleChange(collab.id, 'viewer')}
-                              className={`${collab.role === 'viewer' ? 'font-semibold' : ''} cursor-pointer`}
-                            >
-                              Viewer
-                              {collab.role === 'viewer' && (
-                                <CheckIcon className="ml-auto inline-block" size={10} />
-                              )}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleCollaboratorRoleChange(collab.id, 'editor')}
-                              className={`${collab.role === 'editor' ? 'font-semibold' : ''} cursor-pointer`}
-                            >
-                              Editor
-                              {collab.role === 'editor' && (
-                                <CheckIcon className="ml-auto inline-block" size={10} />
-                              )}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        <div className="col-span-2 flex flex-row items-center justify-end gap-2">
-                          {collaboratorsToBeModified.find((c) => c.id === collab.id) && (
+                    {listData.collaborators.map((collab) => {
+                      const selectedRole =
+                        collaboratorsToBeModified.find((c) => c.id === collab.id)?.role ||
+                        collab.role;
+
+                      return (
+                        <div
+                          key={collab.id}
+                          className="border-muted flex grid w-full grid-cols-7 items-center gap-2 rounded-md border py-2 pr-4 pl-4"
+                        >
+                          <div className="col-span-3 flex flex-col gap-0">
+                            <p className="text-primary font-semibold">{collab.user.username}</p>
+                            <p className="text-muted-foreground text-xs">{collab.user.email}</p>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                className="col-span-2 cursor-pointer p-0 capitalize"
+                                variant="ghost"
+                                size="sm"
+                              >
+                                {collaboratorsToBeModified.find((c) => c.id === collab.id)?.role ||
+                                  collab.role}
+                                <ChevronDown className="inline-block" size={12} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuLabel>Change role</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleCollaboratorRoleChange(collab.id, 'viewer')}
+                                className={`${selectedRole === 'viewer' ? 'font-semibold' : ''} cursor-pointer`}
+                              >
+                                Viewer
+                                {selectedRole === 'viewer' && (
+                                  <CheckIcon className="ml-auto inline-block" size={10} />
+                                )}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleCollaboratorRoleChange(collab.id, 'editor')}
+                                className={`${selectedRole === 'editor' ? 'font-semibold' : ''} cursor-pointer`}
+                              >
+                                Editor
+                                {selectedRole === 'editor' && (
+                                  <CheckIcon className="ml-auto inline-block" size={10} />
+                                )}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          <div className="col-span-2 flex flex-row items-center justify-end gap-2">
+                            {collaboratorsToBeModified.find((c) => c.id === collab.id) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="group h-[32px] w-[32px] cursor-pointer"
+                                onClick={() => saveUpdatedCollaboratorRole(collab.id)}
+                                disabled={isUpdatingCollaboratorRole}
+                              >
+                                <Save size={14} className="group-hover:stroke-success transition" />
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
                               className="group h-[32px] w-[32px] cursor-pointer"
-                              onClick={() => saveUpdatedCollaboratorRole(collab.id)}
-                              disabled={isUpdatingCollaboratorRole}
+                              onClick={() =>
+                                removeCollaborator({
+                                  listId: collab.listId,
+                                  collaboratorId: collab.id,
+                                })
+                              }
+                              disabled={isRemovingCollaborator}
                             >
-                              <Save size={14} />
+                              <Trash
+                                size={14}
+                                className="group-hover:stroke-destructive transition"
+                              />
                             </Button>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="group h-[32px] w-[32px] cursor-pointer"
-                            onClick={() =>
-                              removeCollaborator({
-                                listId: collab.listId,
-                                collaboratorId: collab.id,
-                              })
-                            }
-                            disabled={isRemovingCollaborator}
-                          >
-                            <Trash size={14} className="group-hover:stroke-destructive" />
-                          </Button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </section>
                 ) : (
                   <p className="mx-auto w-full text-center">No collaborators found.</p>

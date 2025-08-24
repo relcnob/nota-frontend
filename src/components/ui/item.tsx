@@ -10,9 +10,10 @@ type Props = {
   item: Partial<Item> | Item;
   onUpdate: (updatedItem: Partial<Item>) => void;
   onDelete: (id: string) => void;
+  canEdit: boolean;
 };
 
-export function ItemElement({ item, onUpdate, onDelete }: Props) {
+export function ItemElement({ item, onUpdate, onDelete, canEdit }: Props) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingQty, setIsEditingQty] = useState(false);
   const [isEditingCategory, setIsEditingCategory] = useState(false);
@@ -67,6 +68,7 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
         onCheckedChange={(v: boolean) => {
           handleCompletedSubmit(v);
         }}
+        disabled={!canEdit}
       />
       <div className="col-span-6 ml-4 flex-1">
         {isEditingName ? (
@@ -81,7 +83,7 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
         ) : (
           <div
             className={`max-w-xs cursor-pointer font-medium ${!item.name ? 'text-muted-foreground' : ''}`}
-            onClick={() => setIsEditingName(true)}
+            onClick={() => canEdit && setIsEditingName(true)}
           >
             {item.name || 'Untitled'}
           </div>
@@ -115,7 +117,7 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setIsEditingNotes(true)}
+                  onClick={() => canEdit && setIsEditingNotes(true)}
                   className="cursor-pointer"
                 >
                   <Pen size={16} /> Edit
@@ -126,7 +128,7 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
         ) : (
           <div
             className={`max-w-full cursor-pointer px-2 text-xs font-medium ${!item.notes ? 'text-muted-foreground' : ''}`}
-            onClick={() => setIsEditingNotes(true)}
+            onClick={() => canEdit && setIsEditingNotes(true)}
           >
             {item.notes || 'No notes'}
           </div>
@@ -138,7 +140,7 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
             autoFocus
             className="w-full rounded border px-2 py-0 text-sm"
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            onChange={(e) => canEdit && setCategory(e.target.value)}
             onBlur={handleCategorySubmit}
             onKeyDown={(e) => e.key === 'Enter' && handleCategorySubmit()}
           />
@@ -146,7 +148,7 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
           <Badge
             variant={item.category ? 'default' : 'outline'}
             className={`max-w-sm cursor-pointer text-xs font-medium`}
-            onClick={() => setIsEditingCategory(true)}
+            onClick={() => canEdit && setIsEditingCategory(true)}
           >
             {item.category || 'No category'}
           </Badge>
@@ -164,55 +166,60 @@ export function ItemElement({ item, onUpdate, onDelete }: Props) {
             onKeyDown={(e) => e.key === 'Enter' && handleQtySubmit()}
           />
         ) : (
-          <span className="flex w-[64px] cursor-pointer" onClick={() => setIsEditingQty(true)}>
+          <span
+            className="flex w-[64px] cursor-pointer"
+            onClick={() => canEdit && setIsEditingQty(true)}
+          >
             x {item.quantity ?? 1}
           </span>
         )}
       </div>
-      <Popover open={isDeleteOpen} onOpenChange={setDeleteOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            className="group col-span-2 cursor-pointer justify-self-end p-1"
-          >
-            <Trash
-              className="group-hover:stroke-destructive stroke-muted-foreground transition"
-              size={20}
-            />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent>
-          <div>
-            <p className="text-muted-foreground mb-4 justify-center text-center text-sm">
-              Are you sure you want to delete this list?
-            </p>
-            <div className="grid grid-cols-2 gap-6">
-              <Button
-                className="cursor-pointer"
-                variant="outline"
-                size="sm"
-                onClick={() => setDeleteOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="cursor-pointer"
-                variant="destructive"
-                size="sm"
-                onClick={() => {
-                  if (!item.id) return;
-                  onDelete(item.id);
-                  setDeleteOpen(false);
-                }}
-              >
-                <Trash className="stroke-white" size={20} />
-                Delete
-              </Button>
+      {canEdit && (
+        <Popover open={isDeleteOpen} onOpenChange={setDeleteOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="group col-span-2 cursor-pointer justify-self-end p-1"
+            >
+              <Trash
+                className="group-hover:stroke-destructive stroke-muted-foreground transition"
+                size={20}
+              />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent>
+            <div>
+              <p className="text-muted-foreground mb-4 justify-center text-center text-sm">
+                Are you sure you want to delete this list?
+              </p>
+              <div className="grid grid-cols-2 gap-6">
+                <Button
+                  className="cursor-pointer"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDeleteOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="cursor-pointer"
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    if (!item.id) return;
+                    onDelete(item.id);
+                    setDeleteOpen(false);
+                  }}
+                >
+                  <Trash className="stroke-white" size={20} />
+                  Delete
+                </Button>
+              </div>
             </div>
-          </div>
-        </PopoverContent>
-      </Popover>
+          </PopoverContent>
+        </Popover>
+      )}
     </div>
   );
 }
