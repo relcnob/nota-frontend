@@ -43,6 +43,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -776,10 +777,19 @@ export default function ListDetailPage() {
                       </Button>
                     )}
                   </div>
-                  <div className="mt-2 max-h-[250px] overflow-y-auto">
+                  <div className="mt-2 flex max-h-[300px] flex-col gap-4 overflow-y-auto">
                     {listData.collaborators.map((collab) => (
-                      <div key={collab.id} className="mt-2">
-                        {collab.user.username} - {collab.role}
+                      <div
+                        key={collab.id}
+                        className={'row flex w-full items-center justify-between gap-2'}
+                      >
+                        <div className={'flex flex-col items-start justify-center gap-1'}>
+                          <div className="flex items-center gap-2">
+                            <p>{collab.user.username}</p>{' '}
+                            <Badge className="text-xs capitalize">{collab.role}</Badge>
+                          </div>
+                          <p className="text-muted-foreground text-sm">{collab.user.email}</p>
+                        </div>
                       </div>
                     ))}
                   </div>
