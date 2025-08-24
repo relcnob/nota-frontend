@@ -343,14 +343,6 @@ export default function ListDetailPage() {
   };
 
   useEffect(() => {
-    if (collaboratorsToBeModified.length > 0) {
-      console.log(collaboratorsToBeModified);
-    } else {
-      console.log('No collaborators to be modified');
-    }
-  }, [collaboratorsToBeModified]);
-
-  useEffect(() => {
     if (
       bulkCreateItems.isSuccess ||
       bulkUpdateItems.isSuccess ||
@@ -740,10 +732,13 @@ export default function ListDetailPage() {
                   <Calendar className="mr-2" size={18} />
                   <p>Created</p>
                   <p className="ml-auto">
-                    {new Date(listData.createdAt).toLocaleDateString()}{' '}
-                    {new Date(listData.createdAt).toLocaleTimeString('en-US', {
+                    {new Date(listData.createdAt).toLocaleString('en-GB', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
                       hour: '2-digit',
                       minute: '2-digit',
+                      hour12: false,
                     })}
                   </p>
                 </div>
@@ -757,7 +752,7 @@ export default function ListDetailPage() {
                     <HoverCardContent className="flex w-fit items-center justify-center">
                       <p className="mx-auto font-semibold">
                         {new Date(listData.updatedAt).toLocaleDateString()}{' '}
-                        {new Date(listData.updatedAt).toLocaleTimeString('en-US', {
+                        {new Date(listData.updatedAt).toLocaleTimeString('en-GB', {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
