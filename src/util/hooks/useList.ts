@@ -83,3 +83,110 @@ export function useCreateList() {
     },
   });
 }
+
+export function useAddListCollaborator() {
+  const queryClient = new QueryClient();
+  return useMutation({
+    mutationFn: async (data: { listId: string; email: string; role: 'viewer' | 'editor' }) => {
+      const res = await api.post(`/lists/${data.listId}/collaborators`, {
+        email: data.email,
+        role: data.role,
+        listId: data.listId,
+      });
+      if (res.status !== 201) {
+        throw new Error('Failed to add collaborator');
+      }
+      return res;
+    },
+    onError: (error) => {
+      console.error('Error adding collaborator:', error);
+    },
+    onSuccess: (_response, variables) => {
+      console.log('Collaborator added successfully');
+      queryClient.setQueryData(['list', variables.listId], (oldData: ListResponse | undefined) => {
+        if (!oldData) return;
+        return {
+          ...oldData,
+          data: {
+            ...oldData.data,
+            collaborators: [...oldData.data.collaborators, _response.data],
+          },
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: ['list', variables.listId] });
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
+    },
+  });
+}
+
+export function useRemoveListCollaborator() {
+  const queryClient = new QueryClient();
+  return useMutation({
+    mutationFn: async (data: { listId: string; collaboratorId: string }) => {
+      const res = await api.delete(`/lists/${data.listId}/collaborators/${data.collaboratorId}`);
+      if (res.status !== 200) {
+        throw new Error('Failed to remove collaborator');
+      }
+      return res;
+    },
+    onError: (error) => {
+      console.error('Error removing collaborator:', error);
+    },
+    onSuccess: (_response, variables) => {
+      console.log('Collaborator removed successfully');
+      queryClient.setQueryData(['list', variables.listId], (oldData: ListResponse | undefined) => {
+        if (!oldData) return;
+        return {
+          ...oldData,
+          data: {
+            ...oldData.data,
+            collaborators: oldData.data.collaborators.filter(
+              (collab) => collab.id !== variables.collaboratorId,
+            ),
+          },
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: ['list', variables.listId] });
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
+    },
+  });
+}
+
+export function useUpdateCollaboratorRole() {
+  const queryClient = new QueryClient();
+  return useMutation({
+    mutationFn: async (data: {
+      listId: string;
+      collaboratorId: string;
+      role: 'viewer' | 'editor';
+    }) => {
+      const res = await api.patch(`/lists/${data.listId}/collaborators/${data.collaboratorId}`, {
+        role: data.role,
+      });
+      if (res.status !== 200) {
+        throw new Error('Failed to update collaborator role');
+      }
+      return res.data;
+    },
+    onError: (error) => {
+      console.error('Error updating collaborator role:', error);
+    },
+    onSuccess: (_response, variables) => {
+      console.log('Collaborator role updated successfully');
+      queryClient.setQueryData(['list', variables.listId], (oldData: ListResponse | undefined) => {
+        if (!oldData) return;
+        return {
+          ...oldData,
+          data: {
+            ...oldData.data,
+            collaborators: oldData.data.collaborators.map((collab) =>
+              collab.id === variables.collaboratorId ? { ...collab, role: variables.role } : collab,
+            ),
+          },
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: ['list', variables.listId] });
+      queryClient.invalidateQueries({ queryKey: ['lists'] });
+    },
+  });
+}

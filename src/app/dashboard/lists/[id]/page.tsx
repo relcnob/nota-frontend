@@ -1,22 +1,33 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useList, useUpdateList } from '@/util/hooks/useList';
+import {
+  useAddListCollaborator,
+  useList,
+  useRemoveListCollaborator,
+  useUpdateCollaboratorRole,
+  useUpdateList,
+} from '@/util/hooks/useList';
 import {
   ArrowUpDown,
   Calendar,
   CheckCircle2,
+  CheckIcon,
   ChevronDown,
   ChevronLeft,
   CircleCheck,
   CircleUserRound,
   Crown,
   Funnel,
+  LoaderCircle,
   LucideCalendarSync,
   Pen,
   Plus,
   RefreshCcw,
+  Save,
+  Trash,
   TriangleAlert,
+  XCircle,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { formatRelativeDate } from '@/util/helpers/formatRelativeDate';
@@ -28,8 +39,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -45,6 +59,9 @@ import { Item } from '@/util/types/item';
 import Link from 'next/link';
 import { useBulkItems } from '@/util/hooks/useBulkItems';
 import { toast } from 'sonner';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
+import { validateEmail } from '@/util/helpers/validators';
 
 const SortOptions = [
   { label: 'Name (A-Z)', value: 'name_asc' },
@@ -73,6 +90,13 @@ export default function ListDetailPage() {
   const [description, setDescription] = useState('');
   const [itemsToBeRemoved, setItemsToBeRemoved] = useState<string[]>([]);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [isCollaboratorSheetOpen, setIsCollaboratorSheetOpen] = useState(false);
+  const [collaboratorEmail, setCollaboratorEmail] = useState<string>('');
+  const [collaboratorRole, setCollaboratorRole] = useState<'viewer' | 'editor'>('viewer');
+  const [collaboratorAddError, setCollaboratorAddError] = useState<string>('');
+  const [collaboratorsToBeModified, setCollaboratorsToBeModified] = useState<
+    { id: string; role: 'viewer' | 'editor' }[]
+  >([]);
 
   const params = useParams();
   const id = params?.id as string;
@@ -83,8 +107,36 @@ export default function ListDetailPage() {
     isError: isListMutationError,
     isSuccess: isListMutationSuccess,
   } = useUpdateList();
+
+  const {
+    mutate: addCollaborator,
+    isPending: isAddingCollaborator,
+    isError: isAddCollaboratorError,
+    isSuccess: isAddCollaboratorSuccess,
+  } = useAddListCollaborator();
+
+  const {
+    mutate: removeCollaborator,
+    isPending: isRemovingCollaborator,
+    isError: isRemoveCollaboratorError,
+    isSuccess: isRemoveCollaboratorSuccess,
+  } = useRemoveListCollaborator();
+
+  const {
+    mutate: updateCollaboratorRole,
+    isPending: isUpdatingCollaboratorRole,
+    isError: isUpdateCollaboratorRoleError,
+    isSuccess: isUpdateCollaboratorRoleSuccess,
+  } = useUpdateCollaboratorRole();
+
   const { data, isLoading, isError, refetch } = useList(id);
-  const { bulkUpdateItems, bulkCreateItems, bulkRemoveItems } = useBulkItems();
+  const {
+    bulkUpdateItems,
+    bulkCreateItems,
+    bulkRemoveItems,
+    isPending: isBulkUpdating,
+  } = useBulkItems();
+
   useEffect(() => {
     if (data && !isLoading) {
       setListData(data.data);
@@ -181,6 +233,15 @@ export default function ListDetailPage() {
     setItemsToBeAdded((prev) => [...prev, newItem]);
   };
 
+  const createNewCollaborator = () => {
+    const collaboratorPayload = {
+      email: collaboratorEmail,
+      role: collaboratorRole,
+      listId: listData?.id || '',
+    };
+    addCollaborator(collaboratorPayload);
+  };
+
   const setHandlers = {
     Title: (value: string) => {
       setTitle(value);
@@ -250,6 +311,38 @@ export default function ListDetailPage() {
     }
   };
 
+  const handleCollaboratorRoleChange = (collaboratorId: string, newRole: 'viewer' | 'editor') => {
+    const alreadyExists = collaboratorsToBeModified.find((c) => c.id === collaboratorId);
+    const currentRole = listData?.collaborators.find((c) => c.id === collaboratorId)?.role;
+
+    if (alreadyExists) {
+      if (alreadyExists.role !== newRole && currentRole !== newRole) {
+        setCollaboratorsToBeModified((prev) =>
+          prev.map((item) => (item.id === collaboratorId ? { ...item, role: newRole } : item)),
+        );
+      }
+      if (currentRole === newRole) {
+        setCollaboratorsToBeModified((prev) => prev.filter((item) => item.id !== collaboratorId));
+      }
+    } else {
+      if (currentRole !== newRole) {
+        setCollaboratorsToBeModified((prev) => [...prev, { id: collaboratorId, role: newRole }]);
+      }
+    }
+  };
+
+  const saveUpdatedCollaboratorRole = (collaboratorId: string) => {
+    const newRole = collaboratorsToBeModified.find((c) => c.id === collaboratorId)?.role;
+    if (newRole) {
+      setCollaboratorsToBeModified((prev) => prev.filter((item) => item.id !== collaboratorId));
+      updateCollaboratorRole({
+        listId: listData?.id || '',
+        collaboratorId,
+        role: newRole,
+      });
+    }
+  };
+
   useEffect(() => {
     if (
       bulkCreateItems.isSuccess ||
@@ -266,6 +359,7 @@ export default function ListDetailPage() {
       setHasUnsavedChanges(false);
       refetch();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     bulkCreateItems.isSuccess,
     bulkUpdateItems.isSuccess,
@@ -273,10 +367,111 @@ export default function ListDetailPage() {
     isListMutationSuccess,
   ]);
 
+  useEffect(() => {
+    if (
+      bulkCreateItems.isError ||
+      bulkUpdateItems.isError ||
+      bulkRemoveItems.isError ||
+      isListMutationError
+    ) {
+      toast('Error saving changes', {
+        id: 'bulk-save-error',
+        position: 'top-center',
+        dismissible: true,
+        icon: <XCircle size={16} />,
+      });
+    }
+  }, [
+    bulkCreateItems.isError,
+    bulkUpdateItems.isError,
+    bulkRemoveItems.isError,
+    isListMutationError,
+  ]);
+
+  useEffect(() => {
+    if (isAddCollaboratorSuccess) {
+      toast('Collaborator added successfully!', {
+        id: 'collaborator-add',
+        position: 'top-center',
+        dismissible: true,
+        icon: <CheckCircle2 size={16} />,
+      });
+    }
+    setCollaboratorEmail('');
+    setCollaboratorRole('viewer');
+    refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAddCollaboratorSuccess]);
+
+  useEffect(() => {
+    if (isAddCollaboratorError) {
+      toast('Error adding collaborator', {
+        id: 'collaborator-add-error',
+        position: 'top-center',
+        dismissible: true,
+        icon: <XCircle size={16} />,
+      });
+      setCollaboratorAddError('Invalid email address');
+    }
+  }, [isAddCollaboratorError]);
+
+  useEffect(() => {
+    if (isRemoveCollaboratorSuccess) {
+      toast('Collaborator removed successfully!', {
+        id: 'collaborator-remove',
+        position: 'top-center',
+        dismissible: true,
+        icon: <CheckCircle2 size={16} />,
+      });
+    }
+    refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRemoveCollaboratorSuccess]);
+
+  useEffect(() => {
+    if (isUpdateCollaboratorRoleSuccess) {
+      toast('Collaborator role updated successfully!', {
+        id: 'collaborator-role-update',
+        position: 'top-center',
+        dismissible: true,
+        icon: <CheckCircle2 size={16} />,
+      });
+    }
+    refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isUpdateCollaboratorRoleSuccess]);
+
+  useEffect(() => {
+    if (isUpdateCollaboratorRoleError) {
+      toast('Error updating collaborator role', {
+        id: 'collaborator-role-update-error',
+        position: 'top-center',
+        dismissible: true,
+        icon: <XCircle size={16} />,
+      });
+    }
+  }, [isUpdateCollaboratorRoleError]);
+
+  useEffect(() => {
+    if (isRemoveCollaboratorError) {
+      toast('Error removing collaborator', {
+        id: 'collaborator-remove-error',
+        position: 'top-center',
+        dismissible: true,
+        icon: <XCircle size={16} />,
+      });
+    }
+  }, [isRemoveCollaboratorError]);
+
   return (
     <div className={'w-full'}>
       {isLoading && !listData ? (
-        <p>Loading...</p>
+        <div className="mt-24 flex h-full w-full items-center justify-center">
+          <div className="flex flex-col items-center justify-center gap-2">
+            <LoaderCircle size={32} className="animate-spin" />
+            <p className="text-muted-foreground text-sm">Loading data...</p>
+          </div>
+        </div>
       ) : isError || !listData ? (
         <p>Error loading list</p>
       ) : null}
@@ -398,47 +593,55 @@ export default function ListDetailPage() {
                 </div>
               </div>
               <Separator className="my-4" />
-              <div className="space-y-4">
-                {listData.items.length > 0 &&
-                  listData.items
-                    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-                    .map((item) => (
-                      <ItemElement
-                        key={item.id}
-                        item={item}
-                        onUpdate={updateItemLocally}
-                        onDelete={() => deleteItemLocally(item.id)}
-                      />
-                    ))}
-                {itemsToBeAdded.length > 0 &&
-                  itemsToBeAdded
-                    .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
-                    .map((item, index) => (
-                      <ItemElement
-                        key={`new-${index}`}
-                        item={item}
-                        onUpdate={updateItemToBeCreatedLocally}
-                        onDelete={(id: string) => {
-                          deleteItemToBeCreatedLocally(id);
-                        }}
-                      />
-                    ))}
-                {listData.items.length === 0 && itemsToBeAdded.length === 0 && (
-                  <p className="text-muted-foreground w-full py-8 text-center">
-                    No items in this list.
-                  </p>
-                )}
-                <div className="my-6 flex justify-center">
-                  <Button
-                    variant="outline"
-                    size="default"
-                    className="cursor-pointer"
-                    onClick={createNewItem}
-                  >
-                    <Plus size={24} /> Add item
-                  </Button>
+              {isBulkUpdating ? (
+                <p className="text-muted-foreground w-full py-8 text-center">Loading...</p>
+              ) : (
+                <div className="space-y-4">
+                  {listData.items.length > 0 &&
+                    listData.items
+                      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+                      .map((item) => (
+                        <ItemElement
+                          key={item.id}
+                          item={item}
+                          onUpdate={updateItemLocally}
+                          onDelete={() => deleteItemLocally(item.id)}
+                          canEdit={isEditor || isOwner}
+                        />
+                      ))}
+                  {itemsToBeAdded.length > 0 &&
+                    itemsToBeAdded
+                      .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
+                      .map((item, index) => (
+                        <ItemElement
+                          key={`new-${index}`}
+                          item={item}
+                          onUpdate={updateItemToBeCreatedLocally}
+                          onDelete={(id: string) => {
+                            deleteItemToBeCreatedLocally(id);
+                          }}
+                          canEdit={isEditor || isOwner}
+                        />
+                      ))}
+                  {listData.items.length === 0 && itemsToBeAdded.length === 0 && (
+                    <p className="text-muted-foreground w-full py-8 text-center">
+                      No items in this list.
+                    </p>
+                  )}
+                  {(isEditor || isOwner) && (
+                    <div className="my-6 flex justify-center">
+                      <Button
+                        variant="outline"
+                        size="default"
+                        className="cursor-pointer"
+                        onClick={createNewItem}
+                      >
+                        <Plus size={24} /> Add item
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
             </div>
             <div className="border-box sticky top-0 col-span-1 flex h-[calc(100vh-60px)] flex-col overflow-y-auto p-4">
               {hasUnsavedChanges ? (
@@ -449,18 +652,19 @@ export default function ListDetailPage() {
               ) : (
                 <div className="block h-[36px] w-full"></div>
               )}
-              <div className="group flex flex-col">
+              <div className="flex flex-col">
                 <div className="mt-6 mb-2 flex items-center justify-between">
                   <h2 className="text-xl font-semibold">About</h2>
                   {isOwner || isEditor ? (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="cursor-pointer opacity-0 transition-opacity group-hover:opacity-100"
+                      className="flex cursor-pointer flex-row items-center gap-2"
                       disabled={isEditingDescription}
                       onClick={() => setIsEditingDescription(true)}
                     >
-                      <Pen size={16} /> Edit
+                      <p className="text-primary text-sm">Edit</p>
+                      <Pen className="stroke-primary inline-block transition" size={14} />
                     </Button>
                   ) : (
                     <></>
@@ -529,10 +733,13 @@ export default function ListDetailPage() {
                   <Calendar className="mr-2" size={18} />
                   <p>Created</p>
                   <p className="ml-auto">
-                    {new Date(listData.createdAt).toLocaleDateString()}{' '}
-                    {new Date(listData.createdAt).toLocaleTimeString('en-US', {
+                    {new Date(listData.createdAt).toLocaleString('en-GB', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
                       hour: '2-digit',
                       minute: '2-digit',
+                      hour12: false,
                     })}
                   </p>
                 </div>
@@ -545,10 +752,13 @@ export default function ListDetailPage() {
                     </HoverCardTrigger>
                     <HoverCardContent className="flex w-fit items-center justify-center">
                       <p className="mx-auto font-semibold">
-                        {new Date(listData.updatedAt).toLocaleDateString()}{' '}
-                        {new Date(listData.updatedAt).toLocaleTimeString('en-US', {
+                        {new Date(listData.updatedAt).toLocaleTimeString('en-GB', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit',
+                          hour12: false,
                         })}
                       </p>
                     </HoverCardContent>
@@ -556,27 +766,33 @@ export default function ListDetailPage() {
                 </div>
                 <Separator className="my-2" />
                 <div>
-                  <div className="flex items-center justify-between">
+                  <div className="group flex items-center justify-between">
                     <h2 className="text-xl font-semibold">Collaborators</h2>
                     {isOwner && (
-                      <Link
-                        className="group flex items-center gap-2"
-                        href={`/dashboard/lists/${id}/collaborators`}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="group flex cursor-pointer items-center gap-2"
+                        onClick={() => setIsCollaboratorSheetOpen(true)}
                       >
-                        <p className="group-hover:text-primary text-muted-foreground text-sm transition">
-                          Edit
-                        </p>
-                        <Pen
-                          className="group-hover:stroke-primary stroke-muted-foreground inline-block transition"
-                          size={14}
-                        />
-                      </Link>
+                        <p className="text-primary text-sm">Edit</p>
+                        <Pen className="stroke-primary inline-block transition" size={14} />
+                      </Button>
                     )}
                   </div>
-                  <div className="mt-2 max-h-[250px] overflow-y-auto">
+                  <div className="mt-2 flex max-h-[300px] flex-col gap-4 overflow-y-auto">
                     {listData.collaborators.map((collab) => (
-                      <div key={collab.id} className="mt-2">
-                        {collab.user.username} - {collab.role}
+                      <div
+                        key={collab.id}
+                        className={'row flex w-full items-center justify-between gap-2'}
+                      >
+                        <div className={'flex flex-col items-start justify-center gap-1'}>
+                          <div className="flex items-center gap-2">
+                            <p>{collab.user.username}</p>{' '}
+                            <Badge className="text-xs capitalize">{collab.role}</Badge>
+                          </div>
+                          <p className="text-muted-foreground text-sm">{collab.user.email}</p>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -595,6 +811,184 @@ export default function ListDetailPage() {
               </div>
             </div>
           </section>
+          <Sheet open={isCollaboratorSheetOpen} onOpenChange={setIsCollaboratorSheetOpen}>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle className="mb-1">Collaborators</SheetTitle>
+              </SheetHeader>
+              <section className="flex h-full w-full flex-grow flex-col p-4 pt-0">
+                {listData.collaborators.length > 0 ? (
+                  <section className="flex flex-grow flex-col gap-1 overflow-y-auto">
+                    {listData.collaborators.map((collab) => {
+                      const selectedRole =
+                        collaboratorsToBeModified.find((c) => c.id === collab.id)?.role ||
+                        collab.role;
+
+                      return (
+                        <div
+                          key={collab.id}
+                          className="border-muted flex grid w-full grid-cols-7 items-center gap-2 rounded-md border py-2 pr-4 pl-4"
+                        >
+                          <div className="col-span-3 flex flex-col gap-0">
+                            <p className="text-primary font-semibold">{collab.user.username}</p>
+                            <p className="text-muted-foreground text-xs">{collab.user.email}</p>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                className="col-span-2 cursor-pointer p-0 capitalize"
+                                variant="ghost"
+                                size="sm"
+                              >
+                                {collaboratorsToBeModified.find((c) => c.id === collab.id)?.role ||
+                                  collab.role}
+                                <ChevronDown className="inline-block" size={12} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuLabel>Change role</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleCollaboratorRoleChange(collab.id, 'viewer')}
+                                className={`${selectedRole === 'viewer' ? 'font-semibold' : ''} cursor-pointer`}
+                              >
+                                Viewer
+                                {selectedRole === 'viewer' && (
+                                  <CheckIcon className="ml-auto inline-block" size={10} />
+                                )}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleCollaboratorRoleChange(collab.id, 'editor')}
+                                className={`${selectedRole === 'editor' ? 'font-semibold' : ''} cursor-pointer`}
+                              >
+                                Editor
+                                {selectedRole === 'editor' && (
+                                  <CheckIcon className="ml-auto inline-block" size={10} />
+                                )}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          <div className="col-span-2 flex flex-row items-center justify-end gap-2">
+                            {collaboratorsToBeModified.find((c) => c.id === collab.id) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="group h-[32px] w-[32px] cursor-pointer"
+                                onClick={() => saveUpdatedCollaboratorRole(collab.id)}
+                                disabled={isUpdatingCollaboratorRole}
+                              >
+                                <Save size={14} className="group-hover:stroke-success transition" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="group h-[32px] w-[32px] cursor-pointer"
+                              onClick={() =>
+                                removeCollaborator({
+                                  listId: collab.listId,
+                                  collaboratorId: collab.id,
+                                })
+                              }
+                              disabled={isRemovingCollaborator}
+                            >
+                              <Trash
+                                size={14}
+                                className="group-hover:stroke-destructive transition"
+                              />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </section>
+                ) : (
+                  <p className="mx-auto w-full text-center">No collaborators found.</p>
+                )}
+                <Separator className="my-4" />
+                <div className="align-self-end mt-auto mb-0 flex flex-col items-center gap-4">
+                  {collaboratorAddError && (
+                    <div className="flex w-full flex-row items-center justify-center gap-2">
+                      <TriangleAlert size={12} className="stroke-destructive inline-block" />
+                      <p className="text-destructive font-sm">{collaboratorAddError}</p>
+                    </div>
+                  )}
+                  <div className="grid w-full grid-cols-6 gap-2">
+                    <Input
+                      placeholder="user@email.com"
+                      value={collaboratorEmail}
+                      onChange={(e) => setCollaboratorEmail(e.target.value)}
+                      onBlur={() => {
+                        if (!validateEmail(collaboratorEmail)) {
+                          setCollaboratorAddError('Invalid email address');
+                        } else {
+                          setCollaboratorAddError('');
+                        }
+                      }}
+                      className="col-span-4"
+                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          className="col-span-2 cursor-pointer capitalize"
+                          variant="ghost"
+                          size="sm"
+                        >
+                          {collaboratorRole} <ChevronDown className="inline-block" size={12} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuLabel>Select role</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => setCollaboratorRole('viewer')}
+                          className={`${collaboratorRole === 'viewer' ? 'font-semibold' : ''} cursor-pointer`}
+                        >
+                          Viewer
+                          {collaboratorRole === 'viewer' && (
+                            <CheckIcon className="ml-auto inline-block" size={10} />
+                          )}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setCollaboratorRole('editor')}
+                          className={`${collaboratorRole === 'editor' ? 'font-semibold' : ''} cursor-pointer`}
+                        >
+                          Editor
+                          {collaboratorRole === 'editor' && (
+                            <CheckIcon className="ml-auto inline-block" size={10} />
+                          )}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full cursor-pointer"
+                    disabled={!validateEmail(collaboratorEmail) || isAddingCollaborator}
+                    onClick={() => {
+                      if (!validateEmail(collaboratorEmail)) {
+                        setCollaboratorAddError('Invalid email address');
+                        return;
+                      } else if (
+                        listData.collaborators.find(
+                          (collab) => collab.user.email === collaboratorEmail,
+                        )
+                      ) {
+                        setCollaboratorAddError('User is already a collaborator');
+                        return;
+                      } else {
+                        setCollaboratorAddError('');
+                        createNewCollaborator();
+                      }
+                    }}
+                  >
+                    Add Collaborator
+                  </Button>
+                </div>
+              </section>
+            </SheetContent>
+          </Sheet>
         </>
       )}
     </div>
