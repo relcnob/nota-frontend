@@ -752,10 +752,13 @@ export default function ListDetailPage() {
                     </HoverCardTrigger>
                     <HoverCardContent className="flex w-fit items-center justify-center">
                       <p className="mx-auto font-semibold">
-                        {new Date(listData.updatedAt).toLocaleDateString()}{' '}
                         {new Date(listData.updatedAt).toLocaleTimeString('en-GB', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit',
+                          hour12: false,
                         })}
                       </p>
                     </HoverCardContent>

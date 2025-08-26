@@ -134,21 +134,28 @@ function ListItem({ list, onDelete }: { list: List; onDelete: (id: string) => vo
               <div className="flex w-fit flex-col gap-2">
                 <Badge className="w-full">
                   <p className="text-sm">
-                    Created: {new Date(list.createdAt).toLocaleDateString()}{' '}
-                    {new Date(list.createdAt).toLocaleTimeString('en-US', {
+                    {`Created: ${new Date(list.createdAt).toLocaleTimeString('en-GB', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
                       hour: '2-digit',
                       minute: '2-digit',
-                    })}
+                      hour12: false,
+                    })}`}
                   </p>
                 </Badge>
                 {list.updatedAt && list.createdAt !== list.updatedAt && (
                   <Badge className="w-full">
                     <p className="text-sm">
-                      Updated: {new Date(list.updatedAt).toLocaleDateString()}{' '}
-                      {new Date(list.updatedAt).toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {`Updated:
+                       ${new Date(list.updatedAt).toLocaleTimeString('en-GB', {
+                         day: '2-digit',
+                         month: '2-digit',
+                         year: 'numeric',
+                         hour: '2-digit',
+                         minute: '2-digit',
+                         hour12: false,
+                       })}`}
                     </p>
                   </Badge>
                 )}
