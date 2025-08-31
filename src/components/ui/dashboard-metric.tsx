@@ -17,7 +17,7 @@ function DashboardMetric({
 }: DashboardMetricProps) {
   return (
     <div
-      className={`border-muted col-span-3 grid aspect-[4/2] h-full grid-cols-4 items-center gap-8 rounded-lg border p-8 ${className}`}
+      className={`border-muted col-span-3 grid aspect-[4/2] flex-grow grid-cols-4 items-center gap-8 rounded-lg border p-8 ${className}`}
       {...rest}
     >
       <div className="bg-muted flex aspect-square w-full items-center justify-center rounded-full">
